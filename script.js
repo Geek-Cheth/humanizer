@@ -3,8 +3,9 @@
  * Handles UI interactions and API communication
  */
 
-// API Configuration
-const API_BASE = 'http://localhost:5000';
+// API Configuration - use relative path for production, localhost for development
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocalhost ? 'http://localhost:5000' : '';
 
 // DOM Elements
 const inputText = document.getElementById('input-text');
@@ -32,13 +33,13 @@ const toast = document.getElementById('toast');
 function showToast(message, type = 'success') {
     const toastIcon = toast.querySelector('.toast-icon');
     const toastMessage = toast.querySelector('.toast-message');
-    
+
     toastIcon.textContent = type === 'success' ? '✓' : '✕';
     toastMessage.textContent = message;
-    
+
     toast.className = `toast ${type}`;
     toast.classList.add('show');
-    
+
     setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
@@ -72,11 +73,11 @@ function getSettings() {
     // Get selected mode
     const modeRadio = document.querySelector('input[name="mode"]:checked');
     const mode = modeRadio ? modeRadio.value : 'balanced';
-    
+
     // Get intensity
     const intensityMap = ['light', 'medium', 'heavy'];
     const intensity = intensityMap[parseInt(intensitySlider.value)];
-    
+
     // Get technique options
     const options = {
         synonyms: document.getElementById('opt-synonyms').checked,
@@ -86,7 +87,7 @@ function getSettings() {
         casual_starters: document.getElementById('opt-starters').checked,
         ai_polish: document.getElementById('opt-polish').checked
     };
-    
+
     return { mode, intensity, options };
 }
 
@@ -121,18 +122,18 @@ function displaySteps(steps) {
  */
 async function humanize() {
     const text = inputText.value.trim();
-    
+
     if (!text) {
         showToast('Please enter some text to humanize', 'error');
         return;
     }
-    
+
     setLoading(true);
     processingInfo.style.display = 'none';
-    
+
     try {
         const settings = getSettings();
-        
+
         const response = await fetch(`${API_BASE}/api/humanize`, {
             method: 'POST',
             headers: {
@@ -145,20 +146,20 @@ async function humanize() {
                 options: settings.options
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             // Display humanized text
             outputText.innerHTML = '';
             outputText.textContent = data.humanized;
             updateOutputCounts(data.humanized);
-            
+
             // Display processing steps
             if (data.steps && data.steps.length > 0) {
                 displaySteps(data.steps);
             }
-            
+
             showToast('Text humanized successfully!', 'success');
         } else {
             throw new Error(data.error || 'Humanization failed');
@@ -198,12 +199,12 @@ function clearInput() {
  */
 async function copyToClipboard() {
     const text = outputText.textContent;
-    
+
     if (!text || text.includes('Your humanized text will appear here')) {
         showToast('No text to copy', 'error');
         return;
     }
-    
+
     try {
         await navigator.clipboard.writeText(text);
         showToast('Copied to clipboard!', 'success');
