@@ -3,38 +3,44 @@ NLP-based Text Humanizer
 Implements programmatic techniques to make text appear more human-written.
 """
 
+import os
 import random
 import re
 import nltk
+
+# Set NLTK data path to /tmp for serverless environments (Vercel, AWS Lambda, etc.)
+# /tmp is the only writable directory on these platforms
+NLTK_DATA_DIR = '/tmp/nltk_data'
+if not os.path.exists(NLTK_DATA_DIR):
+    os.makedirs(NLTK_DATA_DIR, exist_ok=True)
+nltk.data.path.insert(0, NLTK_DATA_DIR)
+
+# Download required NLTK data to /tmp
+def ensure_nltk_data():
+    """Download NLTK data if not present."""
+    packages = [
+        ('tokenizers/punkt', 'punkt'),
+        ('tokenizers/punkt_tab', 'punkt_tab'),
+        ('corpora/wordnet', 'wordnet'),
+        ('taggers/averaged_perceptron_tagger', 'averaged_perceptron_tagger'),
+        ('taggers/averaged_perceptron_tagger_eng', 'averaged_perceptron_tagger_eng'),
+    ]
+    
+    for path, package in packages:
+        try:
+            nltk.data.find(path)
+        except LookupError:
+            try:
+                nltk.download(package, download_dir=NLTK_DATA_DIR, quiet=True)
+            except Exception:
+                pass  # Silently continue if download fails
+
+# Initialize NLTK data
+ensure_nltk_data()
+
 from nltk.corpus import wordnet
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.tag import pos_tag
-
-# Download required NLTK data
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', quiet=True)
-
-try:
-    nltk.data.find('tokenizers/punkt_tab')
-except LookupError:
-    nltk.download('punkt_tab', quiet=True)
-    
-try:
-    nltk.data.find('corpora/wordnet')
-except LookupError:
-    nltk.download('wordnet', quiet=True)
-    
-try:
-    nltk.data.find('taggers/averaged_perceptron_tagger')
-except LookupError:
-    nltk.download('averaged_perceptron_tagger', quiet=True)
-
-try:
-    nltk.data.find('taggers/averaged_perceptron_tagger_eng')
-except LookupError:
-    nltk.download('averaged_perceptron_tagger_eng', quiet=True)
 
 
 # Words to avoid replacing (common, important, or structural)
