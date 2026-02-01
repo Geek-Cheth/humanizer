@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Transform AI-generated text into natural, human-written content using advanced NLP and AI techniques.">
+    <title>Text Humanizer | Transform AI Text to Human Writing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1>Humanizer<span class="accent">AI</span></h1>
+            </div>
+            <p class="tagline">Transform AI-generated text into naturally human writing</p>
+        </header>
+
+        <main class="main-content">
+            <div class="editor-section">
+                <div class="text-panel input-panel">
+                    <div class="panel-header">
+                        <h2>
+                            <span class="icon">📝</span>
+                            Input Text
+                        </h2>
+                        <div class="panel-actions">
+                            <button class="btn-icon" id="paste-btn" title="Paste from clipboard">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon" id="clear-btn" title="Clear text">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="input-text" placeholder="Paste your AI-generated text here..."></textarea>
+                    <div class="word-count">
+                        <span id="input-word-count">0</span> words | <span id="input-char-count">0</span> characters
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <button class="humanize-btn" id="humanize-btn">
+                        <span class="btn-text">Humanize</span>
+                        <span class="btn-icon-arrow">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </span>
+                        <div class="btn-loader">
+                            <div class="spinner"></div>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="text-panel output-panel">
+                    <div class="panel-header">
+                        <h2>
+                            <span class="icon">✨</span>
+                            Humanized Output
+                        </h2>
+                        <div class="panel-actions">
+                            <button class="btn-icon" id="copy-btn" title="Copy to clipboard">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="output-content" id="output-text">
+                        <div class="placeholder-message">
+                            <span class="placeholder-icon">🤖 → 👤</span>
+                            <p>Your humanized text will appear here</p>
+                        </div>
+                    </div>
+                    <div class="word-count">
+                        <span id="output-word-count">0</span> words | <span id="output-char-count">0</span> characters
+                    </div>
+                </div>
+            </div>
+
+            <aside class="settings-panel">
+                <div class="settings-header">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        Settings
+                    </h3>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Processing Mode</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="balanced" checked>
+                            <span class="radio-custom"></span>
+                            <span class="radio-text">
+                                <strong>Balanced</strong>
+                                <small>AI + NLP combined</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="ai_only">
+                            <span class="radio-custom"></span>
+                            <span class="radio-text">
+                                <strong>AI Only</strong>
+                                <small>Cerebras rewriting</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="nlp_only">
+                            <span class="radio-custom"></span>
+                            <span class="radio-text">
+                                <strong>NLP Only</strong>
+                                <small>Programmatic changes</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Intensity</label>
+                    <div class="intensity-slider">
+                        <input type="range" id="intensity" min="0" max="2" value="1" class="slider">
+                        <div class="intensity-labels">
+                            <span>Light</span>
+                            <span>Medium</span>
+                            <span>Heavy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Techniques</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="opt-synonyms" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Synonym Swapping</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="opt-contractions" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Add Contractions</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="opt-vary-length" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Vary Sentence Length</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="opt-informal" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Informal Elements</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="opt-starters" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Casual Starters</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="opt-polish">
+                            <span class="checkbox-custom"></span>
+                            <span>AI Final Polish</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="processing-info" id="processing-info" style="display: none;">
+                    <h4>Processing Steps</h4>
+                    <ul id="steps-list"></ul>
+                </div>
+            </aside>
+        </main>
+
+        <footer class="footer">
+            <p>Powered by <strong>Cerebras AI</strong> & <strong>NLP Techniques</strong></p>
+        </footer>
+    </div>
+
+    <div class="toast" id="toast">
+        <span class="toast-icon"></span>
+        <span class="toast-message"></span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
