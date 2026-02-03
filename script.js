@@ -381,6 +381,31 @@ function raf(time) {
 requestAnimationFrame(raf);
 
 // ============================================
+// Disable Lenis for Clerk modal elements
+// ============================================
+// Lenis should ignore scroll events on Clerk modals
+document.addEventListener('wheel', (e) => {
+    const clerkElement = e.target.closest('.cl-rootBox, .cl-modalBackdrop, .cl-scrollBox, .cl-pageScrollBox, .cl-userProfile-root');
+    if (clerkElement) {
+        e.stopPropagation();
+    }
+}, { passive: false, capture: true });
+
+// Lock body scroll when Clerk modal is open
+function checkForClerkModal() {
+    const clerkModal = document.querySelector('.cl-modalBackdrop');
+    if (clerkModal) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+}
+
+// Watch for Clerk modal changes
+const clerkObserver = new MutationObserver(checkForClerkModal);
+clerkObserver.observe(document.body, { childList: true, subtree: false });
+
+// ============================================
 // Custom Cursor
 // ============================================
 const cursorDot = document.getElementById('cursor-dot');
