@@ -1,13 +1,162 @@
 /**
- * Text Humanizer - Frontend Logic
- * Handles UI interactions and API communication
+ * Text Humanizer - Premium UI/UX
+ * Custom cursor, magnetic effects, smooth scroll, reveal animations
  */
 
-// API Configuration - use relative path for production, localhost for development
+// ============================================
+// Configuration
+// ============================================
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_BASE = isLocalhost ? 'http://localhost:5000' : '';
 
+// ============================================
+// Lenis Smooth Scroll
+// ============================================
+const lenis = new Lenis({
+    duration: 1.2,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    orientation: 'vertical',
+    gestureOrientation: 'vertical',
+    smoothWheel: true,
+    wheelMultiplier: 1,
+    touchMultiplier: 2,
+    infinite: false,
+});
+
+function raf(time) {
+    lenis.raf(time);
+    requestAnimationFrame(raf);
+}
+requestAnimationFrame(raf);
+
+// ============================================
+// Custom Cursor
+// ============================================
+const cursorDot = document.getElementById('cursor-dot');
+const cursorRing = document.getElementById('cursor-ring');
+
+let mouseX = 0, mouseY = 0;
+let ringX = 0, ringY = 0;
+let dotX = 0, dotY = 0;
+
+// Check if touch device
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+if (!isTouchDevice && cursorDot && cursorRing) {
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+
+    document.addEventListener('mousedown', () => {
+        cursorDot.classList.add('clicking');
+        cursorRing.classList.add('clicking');
+    });
+
+    document.addEventListener('mouseup', () => {
+        cursorDot.classList.remove('clicking');
+        cursorRing.classList.remove('clicking');
+    });
+
+    // Cursor animation loop
+    function animateCursor() {
+        // Dot follows immediately
+        dotX += (mouseX - dotX) * 0.5;
+        dotY += (mouseY - dotY) * 0.5;
+
+        // Ring follows with delay
+        ringX += (mouseX - ringX) * 0.15;
+        ringY += (mouseY - ringY) * 0.15;
+
+        cursorDot.style.left = `${dotX}px`;
+        cursorDot.style.top = `${dotY}px`;
+        cursorRing.style.left = `${ringX}px`;
+        cursorRing.style.top = `${ringY}px`;
+
+        requestAnimationFrame(animateCursor);
+    }
+    animateCursor();
+
+    // Hover effects
+    const hoverElements = document.querySelectorAll('button, a, input, textarea, label, .magnetic-btn');
+    hoverElements.forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            cursorDot.classList.add('hovering');
+            cursorRing.classList.add('hovering');
+        });
+        el.addEventListener('mouseleave', () => {
+            cursorDot.classList.remove('hovering');
+            cursorRing.classList.remove('hovering');
+        });
+    });
+}
+
+// ============================================
+// Magnetic Button Effect
+// ============================================
+const magneticButtons = document.querySelectorAll('.magnetic-btn');
+
+magneticButtons.forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+
+        btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+    });
+
+    btn.addEventListener('mouseleave', () => {
+        btn.style.transform = '';
+    });
+});
+
+// ============================================
+// Reveal Animations
+// ============================================
+const revealElements = document.querySelectorAll('.reveal-element, .reveal-text');
+
+const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+        }
+    });
+}, {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+});
+
+revealElements.forEach(el => revealObserver.observe(el));
+
+// Initial reveal for above-fold elements
+setTimeout(() => {
+    document.querySelectorAll('.header .reveal-element, .header .reveal-text').forEach(el => {
+        el.classList.add('revealed');
+    });
+}, 100);
+
+// ============================================
+// Page Loader
+// ============================================
+window.addEventListener('load', () => {
+    const loader = document.getElementById('page-loader');
+    setTimeout(() => {
+        loader.classList.add('hidden');
+
+        // Trigger initial reveals
+        setTimeout(() => {
+            revealElements.forEach(el => {
+                if (el.getBoundingClientRect().top < window.innerHeight) {
+                    el.classList.add('revealed');
+                }
+            });
+        }, 200);
+    }, 600);
+});
+
+// ============================================
 // DOM Elements
+// ============================================
 const inputText = document.getElementById('input-text');
 const outputText = document.getElementById('output-text');
 const humanizeBtn = document.getElementById('humanize-btn');
@@ -17,6 +166,7 @@ const copyBtn = document.getElementById('copy-btn');
 const intensitySlider = document.getElementById('intensity');
 const processingInfo = document.getElementById('processing-info');
 const stepsList = document.getElementById('steps-list');
+const apiStatus = document.getElementById('api-status');
 
 // Word count elements
 const inputWordCount = document.getElementById('input-word-count');
@@ -27,9 +177,9 @@ const outputCharCount = document.getElementById('output-char-count');
 // Toast element
 const toast = document.getElementById('toast');
 
-/**
- * Show toast notification
- */
+// ============================================
+// Toast Notification
+// ============================================
 function showToast(message, type = 'success') {
     const toastIcon = toast.querySelector('.toast-icon');
     const toastMessage = toast.querySelector('.toast-message');
@@ -45,16 +195,13 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-/**
- * Count words in text
- */
+// ============================================
+// Word Count
+// ============================================
 function countWords(text) {
     return text.trim() ? text.trim().split(/\s+/).length : 0;
 }
 
-/**
- * Update word counts
- */
 function updateInputCounts() {
     const text = inputText.value;
     inputWordCount.textContent = countWords(text);
@@ -66,19 +213,16 @@ function updateOutputCounts(text) {
     outputCharCount.textContent = text.length;
 }
 
-/**
- * Get current settings from UI
- */
+// ============================================
+// Settings
+// ============================================
 function getSettings() {
-    // Get selected mode
     const modeRadio = document.querySelector('input[name="mode"]:checked');
     const mode = modeRadio ? modeRadio.value : 'balanced';
 
-    // Get intensity
     const intensityMap = ['light', 'medium', 'heavy'];
     const intensity = intensityMap[parseInt(intensitySlider.value)];
 
-    // Get technique options
     const options = {
         synonyms: document.getElementById('opt-synonyms').checked,
         contractions: document.getElementById('opt-contractions').checked,
@@ -91,22 +235,36 @@ function getSettings() {
     return { mode, intensity, options };
 }
 
-/**
- * Set loading state
- */
+// ============================================
+// Loading State
+// ============================================
 function setLoading(isLoading) {
     if (isLoading) {
         humanizeBtn.classList.add('loading');
         humanizeBtn.disabled = true;
+        updateApiStatus('Processing...', 'warning');
     } else {
         humanizeBtn.classList.remove('loading');
         humanizeBtn.disabled = false;
+        updateApiStatus('Ready', 'success');
     }
 }
 
-/**
- * Display processing steps
- */
+function updateApiStatus(text, status) {
+    if (apiStatus) {
+        const statusDot = apiStatus.querySelector('.status-dot');
+        const statusText = apiStatus.querySelector('.status-text');
+
+        statusText.textContent = text;
+        statusDot.style.background = status === 'success' ? 'var(--success)' :
+            status === 'warning' ? 'var(--warning)' :
+                'var(--error)';
+    }
+}
+
+// ============================================
+// Processing Steps Display
+// ============================================
 function displaySteps(steps) {
     stepsList.innerHTML = '';
     steps.forEach(step => {
@@ -117,9 +275,9 @@ function displaySteps(steps) {
     processingInfo.style.display = 'block';
 }
 
-/**
- * Humanize the input text
- */
+// ============================================
+// Humanize Function
+// ============================================
 async function humanize() {
     const text = inputText.value.trim();
 
@@ -150,12 +308,11 @@ async function humanize() {
         const data = await response.json();
 
         if (data.success) {
-            // Display humanized text
+            // Clear placeholder and show text
             outputText.innerHTML = '';
             outputText.textContent = data.humanized;
             updateOutputCounts(data.humanized);
 
-            // Display processing steps
             if (data.steps && data.steps.length > 0) {
                 displaySteps(data.steps);
             }
@@ -167,14 +324,15 @@ async function humanize() {
     } catch (error) {
         console.error('Error:', error);
         showToast(error.message || 'Failed to humanize text', 'error');
+        updateApiStatus('Error', 'error');
     } finally {
         setLoading(false);
     }
 }
 
-/**
- * Paste from clipboard
- */
+// ============================================
+// Clipboard Functions
+// ============================================
 async function pasteFromClipboard() {
     try {
         const text = await navigator.clipboard.readText();
@@ -186,21 +344,27 @@ async function pasteFromClipboard() {
     }
 }
 
-/**
- * Clear input text
- */
 function clearInput() {
     inputText.value = '';
     updateInputCounts();
+
+    // Reset output
+    outputText.innerHTML = `
+        <div class="placeholder-message">
+            <div class="placeholder-visual">
+                <span class="placeholder-icon">→</span>
+            </div>
+            <p>Humanized text appears here</p>
+        </div>
+    `;
+    updateOutputCounts('');
+    processingInfo.style.display = 'none';
 }
 
-/**
- * Copy output to clipboard
- */
 async function copyToClipboard() {
     const text = outputText.textContent;
 
-    if (!text || text.includes('Your humanized text will appear here')) {
+    if (!text || text.includes('Humanized text appears here')) {
         showToast('No text to copy', 'error');
         return;
     }
@@ -213,7 +377,9 @@ async function copyToClipboard() {
     }
 }
 
+// ============================================
 // Event Listeners
+// ============================================
 inputText.addEventListener('input', updateInputCounts);
 humanizeBtn.addEventListener('click', humanize);
 pasteBtn.addEventListener('click', pasteFromClipboard);
@@ -230,27 +396,52 @@ inputText.addEventListener('keydown', (e) => {
 // Initialize counts
 updateInputCounts();
 
-// Check API health on load
+// ============================================
+// API Health Check
+// ============================================
 async function checkApiHealth() {
     try {
         const response = await fetch(`${API_BASE}/api/health`);
-        if (!response.ok) {
-            console.warn('API server not responding');
+        if (response.ok) {
+            updateApiStatus('Ready', 'success');
+        } else {
+            updateApiStatus('Offline', 'error');
         }
     } catch (error) {
-        console.warn('API server not available. Make sure to run: python app.py');
+        updateApiStatus('Offline', 'error');
+        console.warn('API server not available');
     }
 }
 
 checkApiHealth();
 
-// Hide page loader when everything is ready
-window.addEventListener('load', () => {
-    const loader = document.getElementById('page-loader');
-    setTimeout(() => {
-        loader.classList.add('hidden');
-        setTimeout(() => {
-            loader.style.display = 'none';
-        }, 500);
-    }, 800);
-});
+// ============================================
+// Floating Dock Animation
+// ============================================
+const floatingDock = document.getElementById('floating-dock');
+
+if (floatingDock) {
+    let lastScrollY = 0;
+
+    lenis.on('scroll', ({ scroll }) => {
+        if (scroll > lastScrollY && scroll > 100) {
+            floatingDock.style.transform = 'translateX(-50%) translateY(100px)';
+        } else {
+            floatingDock.style.transform = 'translateX(-50%) translateY(0)';
+        }
+        lastScrollY = scroll;
+    });
+}
+
+// ============================================
+// Textarea Auto-Resize (Optional Enhancement)
+// ============================================
+if (inputText) {
+    inputText.addEventListener('focus', () => {
+        inputText.closest('.glass-card')?.classList.add('focused');
+    });
+
+    inputText.addEventListener('blur', () => {
+        inputText.closest('.glass-card')?.classList.remove('focused');
+    });
+}

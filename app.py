@@ -81,7 +81,6 @@ def humanize():
                 'informal_rate': 0.05 if intensity == 'light' else (0.1 if intensity == 'medium' else 0.15),
             }
             result = humanize_text(result, nlp_options)
-            
         else:  # balanced mode
             # Step 1: AI humanization first
             steps.append('AI Humanization')
