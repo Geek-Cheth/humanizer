@@ -1,6 +1,6 @@
 /**
- * Text Humanizer - Premium UI/UX
- * Custom cursor, magnetic effects, smooth scroll, reveal animations
+ * Text Humanizer - Premium UI/UX with Clerk Authentication
+ * Custom cursor, magnetic effects, smooth scroll, reveal animations, auth
  */
 
 // ============================================
@@ -8,6 +8,357 @@
 // ============================================
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_BASE = isLocalhost ? 'http://localhost:5000' : '';
+
+// ============================================
+// Clerk Authentication State
+// ============================================
+let clerkLoaded = false;
+let isAuthenticated = false;
+let sessionToken = null;
+
+// Clerk appearance configuration for dark theme
+const clerkAppearance = {
+    baseTheme: undefined,
+    layout: {
+        socialButtonsPlacement: 'top',
+        socialButtonsVariant: 'blockButton',
+        shimmer: true
+    },
+    variables: {
+        colorPrimary: '#6366f1',
+        colorBackground: '#0d0d12',
+        colorInputBackground: '#1c1c26',
+        colorInputText: '#f5f5f7',
+        colorText: '#f5f5f7',
+        colorTextSecondary: '#a0a0b0',
+        colorTextOnPrimaryBackground: '#ffffff',
+        colorDanger: '#f87171',
+        colorSuccess: '#34d399',
+        colorWarning: '#fbbf24',
+        colorNeutral: '#6b6b7b',
+        colorShimmer: 'rgba(99, 102, 241, 0.1)',
+        borderRadius: '12px',
+        fontFamily: 'Outfit, sans-serif',
+        fontFamilyButtons: 'Syne, sans-serif',
+        fontSmoothing: 'antialiased',
+        fontSize: '15px',
+        spacingUnit: '16px'
+    },
+    elements: {
+        // Modal backdrop
+        modalBackdrop: {
+            backgroundColor: 'rgba(8, 8, 12, 0.85)',
+            backdropFilter: 'blur(8px)'
+        },
+        // Root container
+        rootBox: {
+            boxShadow: '0 25px 80px -12px rgba(0, 0, 0, 0.8)'
+        },
+        // Main card
+        card: {
+            backgroundColor: '#0d0d12',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '20px',
+            boxShadow: '0 25px 80px -12px rgba(0, 0, 0, 0.8), 0 0 80px rgba(99, 102, 241, 0.15)',
+            padding: '32px'
+        },
+        // Header
+        headerTitle: {
+            color: '#ffffff',
+            fontFamily: 'Syne, sans-serif',
+            fontWeight: '700',
+            fontSize: '1.5rem'
+        },
+        headerSubtitle: {
+            color: '#a0a0b0',
+            fontSize: '0.95rem'
+        },
+        // Social buttons (Google, GitHub, etc.)
+        socialButtonsBlockButton: {
+            backgroundColor: '#1c1c26',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            color: '#f5f5f7',
+            borderRadius: '12px',
+            padding: '14px 20px',
+            fontSize: '0.95rem',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+                backgroundColor: '#242432',
+                borderColor: '#6366f1',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
+            }
+        },
+        socialButtonsBlockButtonText: {
+            color: '#f5f5f7',
+            fontWeight: '500'
+        },
+        // Social button icons
+        socialButtonsIconButton: {
+            backgroundColor: '#1c1c26',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '12px',
+            '&:hover': {
+                backgroundColor: '#242432',
+                borderColor: '#6366f1'
+            }
+        },
+        socialButtonsProviderIcon: {
+            // White background makes colored icons visible
+            backgroundColor: '#ffffff',
+            borderRadius: '6px',
+            padding: '3px'
+        },
+        // Divider
+        dividerLine: {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)'
+        },
+        dividerText: {
+            color: '#6b6b7b',
+            fontSize: '0.8rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em'
+        },
+        // Form labels
+        formFieldLabel: {
+            color: '#a0a0b0',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            marginBottom: '8px'
+        },
+        // Input fields
+        formFieldInput: {
+            backgroundColor: '#1c1c26',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#f5f5f7',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            fontSize: '1rem',
+            transition: 'all 0.2s ease',
+            '&:focus': {
+                borderColor: '#6366f1',
+                boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.15)',
+                backgroundColor: '#242432'
+            },
+            '&::placeholder': {
+                color: '#52525e'
+            }
+        },
+        // Primary button (Continue, Sign in)
+        formButtonPrimary: {
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            color: '#ffffff',
+            borderRadius: '9999px',
+            fontFamily: 'Syne, sans-serif',
+            fontWeight: '600',
+            fontSize: '1rem',
+            padding: '14px 28px',
+            border: 'none',
+            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.3)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+                background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 30px rgba(99, 102, 241, 0.4)'
+            },
+            '&:active': {
+                transform: 'translateY(0)'
+            }
+        },
+        // Footer links
+        footerActionLink: {
+            color: '#6366f1',
+            fontWeight: '500',
+            transition: 'color 0.2s ease',
+            '&:hover': {
+                color: '#818cf8'
+            }
+        },
+        footerActionText: {
+            color: '#6b6b7b'
+        },
+        // Identity preview
+        identityPreviewText: {
+            color: '#f5f5f7'
+        },
+        identityPreviewEditButton: {
+            color: '#6366f1',
+            '&:hover': {
+                color: '#818cf8'
+            }
+        },
+        // Form actions (Forgot password, etc.)
+        formFieldAction: {
+            color: '#6366f1',
+            fontSize: '0.85rem',
+            '&:hover': {
+                color: '#818cf8'
+            }
+        },
+        // Alerts
+        alert: {
+            backgroundColor: 'rgba(248, 113, 113, 0.1)',
+            border: '1px solid rgba(248, 113, 113, 0.3)',
+            borderRadius: '10px'
+        },
+        alertText: {
+            color: '#f5f5f7'
+        },
+        // Close button
+        modalCloseButton: {
+            color: '#6b6b7b',
+            transition: 'color 0.2s ease',
+            '&:hover': {
+                color: '#f5f5f7'
+            }
+        },
+        // OTP inputs
+        otpCodeFieldInput: {
+            backgroundColor: '#1c1c26',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#f5f5f7',
+            borderRadius: '10px',
+            '&:focus': {
+                borderColor: '#6366f1',
+                boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.15)'
+            }
+        },
+        // Avatar
+        avatarBox: {
+            border: '2px solid #6366f1'
+        },
+        // Badge
+        badge: {
+            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+            color: '#a5b4fc'
+        },
+        // User button
+        userButtonPopoverCard: {
+            backgroundColor: '#0d0d12',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '16px'
+        },
+        userButtonPopoverActionButton: {
+            color: '#f5f5f7',
+            '&:hover': {
+                backgroundColor: '#1c1c26'
+            }
+        },
+        userButtonPopoverActionButtonIcon: {
+            color: '#a0a0b0'
+        },
+        userButtonPopoverFooter: {
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+        }
+    }
+};
+
+// Wait for Clerk to load
+async function initClerk() {
+    try {
+        // Wait for Clerk to be available
+        while (!window.Clerk) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        await window.Clerk.load({
+            appearance: clerkAppearance
+        });
+        clerkLoaded = true;
+
+        // Check initial auth state
+        updateAuthState();
+
+        // Listen for auth changes
+        window.Clerk.addListener(updateAuthState);
+
+        console.log('Clerk initialized with dark theme');
+    } catch (error) {
+        console.error('Error initializing Clerk:', error);
+    }
+}
+
+async function updateAuthState() {
+    if (!clerkLoaded) return;
+
+    const user = window.Clerk.user;
+    isAuthenticated = !!user;
+
+    // Get session token for API calls
+    if (isAuthenticated) {
+        try {
+            const session = window.Clerk.session;
+            sessionToken = await session.getToken();
+        } catch (e) {
+            sessionToken = null;
+        }
+    } else {
+        sessionToken = null;
+    }
+
+    // Update UI
+    updateAuthUI();
+}
+
+function updateAuthUI() {
+    const authBtn = document.getElementById('auth-btn');
+    const authText = document.getElementById('auth-text');
+    const authOverlay = document.getElementById('auth-overlay');
+
+    if (isAuthenticated && window.Clerk.user) {
+        // Show user info
+        const user = window.Clerk.user;
+        const firstName = user.firstName || 'User';
+
+        authBtn.classList.add('authenticated');
+        authText.textContent = firstName;
+
+        // Hide auth overlay
+        authOverlay.classList.remove('visible');
+
+        // Update status
+        updateApiStatus('Ready', 'success');
+    } else {
+        // Show sign in
+        authBtn.classList.remove('authenticated');
+        authText.textContent = 'Sign In';
+
+        // Show auth overlay
+        authOverlay.classList.add('visible');
+
+        // Update status
+        updateApiStatus('Sign In Required', 'warning');
+    }
+}
+
+function openSignIn() {
+    if (clerkLoaded && window.Clerk) {
+        window.Clerk.openSignIn({
+            appearance: clerkAppearance,
+            afterSignInUrl: window.location.href,
+            afterSignUpUrl: window.location.href
+        });
+    }
+}
+
+function handleAuthClick() {
+    if (!clerkLoaded) return;
+
+    if (isAuthenticated) {
+        // Open user profile with dark theme
+        window.Clerk.openUserProfile({
+            appearance: clerkAppearance
+        });
+    } else {
+        openSignIn();
+    }
+}
+
+// Initialize Clerk
+initClerk();
 
 // ============================================
 // Lenis Smooth Scroll
@@ -168,6 +519,11 @@ const processingInfo = document.getElementById('processing-info');
 const stepsList = document.getElementById('steps-list');
 const apiStatus = document.getElementById('api-status');
 
+// Auth elements
+const authBtn = document.getElementById('auth-btn');
+const authCta = document.getElementById('auth-cta');
+const authOverlay = document.getElementById('auth-overlay');
+
 // Word count elements
 const inputWordCount = document.getElementById('input-word-count');
 const inputCharCount = document.getElementById('input-char-count');
@@ -176,6 +532,17 @@ const outputCharCount = document.getElementById('output-char-count');
 
 // Toast element
 const toast = document.getElementById('toast');
+
+// ============================================
+// Auth Event Listeners
+// ============================================
+if (authBtn) {
+    authBtn.addEventListener('click', handleAuthClick);
+}
+
+if (authCta) {
+    authCta.addEventListener('click', openSignIn);
+}
 
 // ============================================
 // Toast Notification
@@ -276,9 +643,27 @@ function displaySteps(steps) {
 }
 
 // ============================================
-// Humanize Function
+// Humanize Function (with Auth)
 // ============================================
 async function humanize() {
+    // Check authentication first
+    if (!isAuthenticated) {
+        showToast('Please sign in to use the humanizer', 'error');
+        openSignIn();
+        return;
+    }
+
+    // Refresh token if needed
+    if (window.Clerk && window.Clerk.session) {
+        try {
+            sessionToken = await window.Clerk.session.getToken();
+        } catch (e) {
+            showToast('Session expired, please sign in again', 'error');
+            openSignIn();
+            return;
+        }
+    }
+
     const text = inputText.value.trim();
 
     if (!text) {
@@ -295,7 +680,8 @@ async function humanize() {
         const response = await fetch(`${API_BASE}/api/humanize`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionToken}`
             },
             body: JSON.stringify({
                 text: text,
@@ -306,6 +692,15 @@ async function humanize() {
         });
 
         const data = await response.json();
+
+        if (response.status === 401) {
+            // Auth error
+            showToast('Authentication required. Please sign in.', 'error');
+            isAuthenticated = false;
+            updateAuthUI();
+            openSignIn();
+            return;
+        }
 
         if (data.success) {
             // Clear placeholder and show text
@@ -403,7 +798,9 @@ async function checkApiHealth() {
     try {
         const response = await fetch(`${API_BASE}/api/health`);
         if (response.ok) {
-            updateApiStatus('Ready', 'success');
+            if (isAuthenticated) {
+                updateApiStatus('Ready', 'success');
+            }
         } else {
             updateApiStatus('Offline', 'error');
         }
@@ -434,7 +831,7 @@ if (floatingDock) {
 }
 
 // ============================================
-// Textarea Auto-Resize (Optional Enhancement)
+// Textarea Focus State
 // ============================================
 if (inputText) {
     inputText.addEventListener('focus', () => {

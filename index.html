@@ -18,6 +18,13 @@
     <!-- Lenis Smooth Scroll -->
     <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
 
+    <!-- Clerk Authentication -->
+    <script async crossorigin="anonymous"
+        data-clerk-publishable-key="pk_test_dmFzdC1jYXRmaXNoLTE2LmNsZXJrLmFjY291bnRzLmRldiQ"
+        src="https://vast-catfish-16.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+        type="text/javascript">
+        </script>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -246,11 +253,33 @@
                     <span class="status-text">Ready</span>
                 </div>
                 <div class="dock-divider"></div>
+                <!-- Auth Button -->
+                <div class="dock-item dock-auth" id="dock-auth">
+                    <button class="auth-btn" id="auth-btn">
+                        <span class="auth-icon">👤</span>
+                        <span class="auth-text" id="auth-text">Sign In</span>
+                    </button>
+                </div>
+                <div class="dock-divider"></div>
                 <div class="dock-item dock-credit">
                     <span>Cheth · 2026</span>
                 </div>
             </div>
         </nav>
+    </div>
+
+    <!-- Auth Required Overlay -->
+    <div class="auth-overlay" id="auth-overlay">
+        <div class="auth-modal glass-card">
+            <div class="auth-modal-content">
+                <div class="auth-icon-large">🔐</div>
+                <h2>Sign In Required</h2>
+                <p>Please sign in to use the Text Humanizer</p>
+                <button class="auth-cta magnetic-btn" id="auth-cta">
+                    <span>Sign In to Continue</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification -->

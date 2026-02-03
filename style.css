@@ -1340,3 +1340,281 @@ body {
         font-size: 0.9rem;
     }
 }
+
+/* ============================================
+   AUTH COMPONENTS
+   ============================================ */
+
+/* Auth Button in Dock */
+.auth-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    cursor: none;
+    transition: all var(--duration-fast) var(--ease-out-quart);
+}
+
+.auth-btn:hover {
+    background: var(--bg-elevated);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+.auth-btn.authenticated {
+    border-color: var(--success);
+}
+
+.auth-btn.authenticated .auth-icon {
+    color: var(--success);
+}
+
+.auth-icon {
+    font-size: 0.9rem;
+}
+
+.auth-text {
+    white-space: nowrap;
+}
+
+/* Auth Overlay */
+.auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 8, 12, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--duration-normal) var(--ease-out-expo);
+}
+
+.auth-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.auth-modal {
+    max-width: 400px;
+    width: 90%;
+    padding: var(--space-10);
+    text-align: center;
+    transform: translateY(20px) scale(0.95);
+    transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.auth-overlay.visible .auth-modal {
+    transform: translateY(0) scale(1);
+}
+
+.auth-modal-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.auth-icon-large {
+    font-size: 3rem;
+    margin-bottom: var(--space-2);
+}
+
+.auth-modal h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.auth-modal p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+/* Auth CTA Button */
+.auth-cta {
+    margin-top: var(--space-4);
+    padding: var(--space-4) var(--space-8);
+    background: var(--accent-gradient);
+    border: none;
+    border-radius: var(--radius-full);
+    color: white;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: none;
+    transition: all var(--duration-normal) var(--ease-out-expo);
+}
+
+.auth-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px var(--accent-glow);
+}
+
+.auth-cta:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* User Avatar in Dock (when signed in) */
+.user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--success);
+}
+
+/* Clerk Modal Customization */
+.cl-rootBox {
+    --clerk-accent: #6366f1 !important;
+}
+
+.cl-card {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--glass-border) !important;
+}
+
+/* Fix social button icons - give them a visible background */
+.cl-socialButtonsIconButton,
+.cl-socialButtonsBlockButton {
+    background-color: #1c1c26 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.cl-socialButtonsIconButton:hover,
+.cl-socialButtonsBlockButton:hover {
+    background-color: #242432 !important;
+    border-color: #6366f1 !important;
+}
+
+/* Social provider icons - add white background circle */
+.cl-socialButtonsProviderIcon {
+    background-color: #ffffff !important;
+    border-radius: 6px !important;
+    padding: 4px !important;
+}
+
+/* Alternative: Make icons white on dark */
+.cl-socialButtonsBlockButton__google .cl-socialButtonsProviderIcon,
+.cl-socialButtonsIconButton__google .cl-socialButtonsProviderIcon {
+    background-color: #ffffff !important;
+}
+
+.cl-socialButtonsBlockButton__github .cl-socialButtonsProviderIcon,
+.cl-socialButtonsIconButton__github .cl-socialButtonsProviderIcon {
+    background-color: #ffffff !important;
+}
+
+.cl-socialButtonsBlockButton__apple .cl-socialButtonsProviderIcon,
+.cl-socialButtonsIconButton__apple .cl-socialButtonsProviderIcon {
+    background-color: #ffffff !important;
+}
+
+.cl-socialButtonsBlockButton__microsoft .cl-socialButtonsProviderIcon,
+.cl-socialButtonsIconButton__microsoft .cl-socialButtonsProviderIcon {
+    background-color: #ffffff !important;
+}
+
+.cl-socialButtonsBlockButton__facebook .cl-socialButtonsProviderIcon,
+.cl-socialButtonsIconButton__facebook .cl-socialButtonsProviderIcon {
+    background-color: #ffffff !important;
+}
+
+/* Social button text */
+.cl-socialButtonsBlockButtonText {
+    color: #f5f5f7 !important;
+}
+
+/* Input fields */
+.cl-formFieldInput {
+    background-color: #1c1c26 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #f5f5f7 !important;
+}
+
+.cl-formFieldInput:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+/* Labels */
+.cl-formFieldLabel {
+    color: #a0a0b0 !important;
+}
+
+/* Primary button */
+.cl-formButtonPrimary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    border: none !important;
+}
+
+.cl-formButtonPrimary:hover {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%) !important;
+}
+
+/* Footer links */
+.cl-footerActionLink {
+    color: #6366f1 !important;
+}
+
+/* Divider */
+.cl-dividerLine {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.cl-dividerText {
+    color: #6b6b7b !important;
+}
+
+/* Header */
+.cl-headerTitle {
+    color: #ffffff !important;
+}
+
+.cl-headerSubtitle {
+    color: #a0a0b0 !important;
+}
+
+/* Modal close button */
+.cl-modalCloseButton {
+    color: #6b6b7b !important;
+}
+
+.cl-modalCloseButton:hover {
+    color: #f5f5f7 !important;
+}
+
+/* User button popover */
+.cl-userButtonPopoverCard {
+    background-color: #0d0d12 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.cl-userButtonPopoverActionButton {
+    color: #f5f5f7 !important;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+    background-color: #1c1c26 !important;
+}
+
+/* Internal page cards */
+.cl-profileSectionPrimaryButton {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+}
+
+/* Alerts */
+.cl-alert {
+    background-color: rgba(248, 113, 113, 0.1) !important;
+    border-color: rgba(248, 113, 113, 0.3) !important;
+}
