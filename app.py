@@ -44,6 +44,8 @@ def get_clerk_jwks():
         if padding != 4:
             key_data += '=' * padding
         frontend_api = base64.b64decode(key_data).decode('utf-8')
+        if frontend_api.endswith('$'):
+            frontend_api = frontend_api[:-1]
         
         jwks_url = f"https://{frontend_api}/.well-known/jwks.json"
         response = requests.get(jwks_url, timeout=10)
