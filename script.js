@@ -539,7 +539,7 @@ const humanizeBtn = document.getElementById('humanize-btn');
 const pasteBtn = document.getElementById('paste-btn');
 const clearBtn = document.getElementById('clear-btn');
 const copyBtn = document.getElementById('copy-btn');
-const intensitySlider = document.getElementById('intensity');
+const passesSlider = document.getElementById('passes');
 const processingInfo = document.getElementById('processing-info');
 const stepsList = document.getElementById('steps-list');
 const apiStatus = document.getElementById('api-status');
@@ -609,22 +609,12 @@ function updateOutputCounts(text) {
 // Settings
 // ============================================
 function getSettings() {
-    const modeRadio = document.querySelector('input[name="mode"]:checked');
-    const mode = modeRadio ? modeRadio.value : 'balanced';
+    const styleRadio = document.querySelector('input[name="style"]:checked');
+    const style = styleRadio ? styleRadio.value : 'academic';
 
-    const intensityMap = ['light', 'medium', 'heavy'];
-    const intensity = intensityMap[parseInt(intensitySlider.value)];
+    const passes = parseInt(passesSlider.value) || 2;
 
-    const options = {
-        synonyms: document.getElementById('opt-synonyms').checked,
-        contractions: document.getElementById('opt-contractions').checked,
-        vary_length: document.getElementById('opt-vary-length').checked,
-        informal: document.getElementById('opt-informal').checked,
-        casual_starters: document.getElementById('opt-starters').checked,
-        ai_polish: document.getElementById('opt-polish').checked
-    };
-
-    return { mode, intensity, options };
+    return { style, passes };
 }
 
 // ============================================
@@ -710,9 +700,8 @@ async function humanize() {
             },
             body: JSON.stringify({
                 text: text,
-                mode: settings.mode,
-                intensity: settings.intensity,
-                options: settings.options
+                style: settings.style,
+                passes: settings.passes
             })
         });
 

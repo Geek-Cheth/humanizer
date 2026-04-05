@@ -1,158 +1,192 @@
 """
 Cerebras AI Client for Text Humanization
-Uses the Cerebras API to rewrite text in a more human-like manner.
+Multi-pass pipeline: NLP variation → minimal AI repair → repeat → format only.
 """
 
 import os
-import requests
-import json
 from dotenv import load_dotenv
+from cerebras.cloud.sdk import Cerebras
 
-# Load environment variables from .env file
 load_dotenv()
 
-API_URL = "https://api.cerebras.ai/v1/chat/completions"
 API_KEY = os.getenv("CEREBRAS_API_KEY")
-MODEL = os.getenv("CEREBRAS_MODEL", "llama-3.3-70b")
+MODEL = os.getenv("CEREBRAS_MODEL", "qwen-3-235b-a22b-instruct-2507")
 
-HUMANIZE_SYSTEM_PROMPT = """You are an expert text humanizer. Your job is to rewrite AI-generated text to make it sound naturally human-written while preserving the original meaning.
-
-Apply these humanization techniques:
-
-1. **Sentence Variation**: Mix short, punchy sentences with longer, flowing ones. Humans don't write uniformly.
-
-2. **Contractions**: Use contractions naturally (don't, it's, we're, they've). AI tends to avoid them.
-
-3. **Informal Transitions**: Use casual connectors like "Plus," "Thing is," "Here's the deal," "Look," occasionally.
-
-4. **Natural Redundancies**: Humans sometimes restate things slightly differently for emphasis.
-
-5. **Conversational Tone**: Add occasional personal touches, rhetorical questions, or asides.
-
-6. **Imperfect Structure**: Start some sentences with "And" or "But". Use fragments occasionally.
-
-7. **Active Voice**: Prefer active voice but mix in passive occasionally for variety.
-
-8. **Idiomatic Expressions**: Sprinkle in common idioms and colloquialisms where appropriate.
-
-9. **Varied Paragraph Lengths**: Some paragraphs can be just one sentence. Others longer.
-
-10. **Reduce Formality**: Avoid overly formal constructions that sound robotic.
-
-IMPORTANT RULES:
-- Keep the core meaning and information intact
-- Don't add new facts or claims
-- Don't make it too casual if the original is academic/professional
-- Match the general tone but make it feel human
-- Output ONLY the rewritten text, no explanations or meta-commentary"""
+client = Cerebras(api_key=API_KEY)
 
 
-def humanize_with_ai(text: str, intensity: str = "medium") -> str:
+REPAIR_PROMPT = """You are an EXTREMELY STRICT AND MINIMAL text corrector. Automated NLP processing has been applied to this text. 
+
+YOUR ONLY JOB: Fix things ONLY if they are absolutely, fundamentally broken and make zero logical sense.
+IF IT MAKES SENSE, EVEN IF IT SOUNDS WEIRD OR CLUNKY, YOU MUST NOT TOUCH IT.
+
+STRICT INSTRUCTIONS (READ CAREFULLY):
+1. ONLY replace a word if it is grammatically invalid (e.g. "he runned") or completely destroys the sentence's meaning.
+2. DO NOT REPLACE, REPHRASE, OR REWRITE IF IT IS ALREADY UNDERSTANDABLE.
+3. DO NOT smooth out the flow. Do not make it sound better. Do not fix awkwardness.
+4. I repeat: ONLY replace if it is absolutely necessary and affects the core meaning, else DO NOT TOUCH IT!
+5. KEEP exactly the same sentence structure, length, and transition words.
+6. If a sentence has a weird choice of words but you can still understand the point: LEAVE IT ALONE.
+7. ABSOLUTELY NO MARKDOWN: Do not return any text wrapping like **bold**, *italics*, or ### headers. Return raw text only.
+
+If you rewrite sentences to sound better, you will fail your core objective. You must return the text exactly as provided, fixing ONLY broken fragments.
+
+Output the text with ONLY the absolute minimum fixes applied. No explanations, no labels, no markdown formatting."""
+
+
+# ─── TRANSLATION SHUFFLE PROMPT ─────────────────────────────────────────────────
+TRANSLATE_TO_GERMAN_PROMPT = """You are a highly accurate English to German translator. Translate the following text into fluent, natural German. Capture the exact original meaning and tone, but use natural German phrasing and sentence structures. Output only the German text."""
+
+TRANSLATE_TO_ENGLISH_PROMPT = """You are a highly accurate German to English translator. Translate the following text into fluent English. Output only the English text."""
+
+
+# ─── FORMAT-ONLY PROMPT ─────────────────────────────────────────────────────────
+# Final pass. Zero content changes. Only mechanical formatting corrections.
+FORMAT_ONLY_PROMPT = """You are a text formatter. Your job is EXCLUSIVELY to fix mechanical spacing and punctuation formatting. The words, sentences, and content must remain word-for-word identical.
+
+ALLOWED CORRECTIONS (and ONLY these):
+- Fix double spaces → single space
+- Add a space after a period, comma, semicolon, or colon if one is missing
+- Remove a space immediately before a period, comma, semicolon, or colon
+- Fix capitalisation of the first word after a period (.)
+- Fix paragraph spacing (one blank line between paragraphs if missing)
+
+STRICTLY FORBIDDEN:
+- Changing any word, even a single character
+- Changing sentence structure or order
+- Adding or removing any sentence
+- Rephrasing or improving any phrasing
+- Making any change you are not 100% certain is purely a spacing/punctuation fix
+- ADDING MARKDOWN: You must not use **bold**, *italics*, or any markdown formatting.
+
+Rule of thumb: if you are unsure whether a change is purely formatting → DO NOT make it.
+
+Output the text with ONLY mechanical formatting corrections applied. Nothing else. No markdown."""
+
+
+# ─── ACADEMIC HUMANIZE PROMPT (for AI-only / first-pass AI mode) ────────────────
+ACADEMIC_HUMANIZE_PROMPT = """You are an expert academic editor who rewrites AI-generated text to be undetectable by AI detectors, without ever making the text casual or informal.
+
+AI detectors flag two signals: low perplexity (predictable word choices) and low burstiness (uniform sentence lengths). Fix both.
+
+WHAT TO CHANGE:
+1. **Burstiness**: Vary sentence lengths dramatically. Short. Then long and complex. Then medium. Humans write in bursts, not uniformly.
+2. **Perplexity**: Use unexpected-but-correct word choices. Instead of "significant impact" → "considerable bearing." Instead of "demonstrates" → "points to." Avoid the most obvious synonym.
+3. **Kill AI clichés**: Replace "Furthermore," "Moreover," "Additionally," "In conclusion," "It is important to note that," "Notably," "It is worth noting" with varied alternatives: "That said," "Even so," "Yet," "On reflection," "In practice," "To this end."
+4. **Academic hedging**: Add "This suggests," "The evidence points to," "One might argue," "It seems reasonable to conclude."
+5. **Embedded clauses**: "The results, though preliminary, suggest a strong correlation."
+6. **Varied paragraph density**: Let one paragraph be one sentence. Let another be four.
+
+RULES:
+- Never use contractions, slang, or casual language
+- Preserve all facts and meaning exactly
+- Output ONLY the rewritten text"""
+
+
+CASUAL_HUMANIZE_PROMPT = """You are an expert text humanizer. Rewrite this AI-generated text to sound like a real person — natural, conversational, genuine.
+
+Apply: contractions freely, varied sentence lengths, informal transitions ("Plus," "Thing is," "Look,"), start sentences with "And" or "But" occasionally, natural imperfections, idiomatic language, varied paragraph lengths.
+
+RULES:
+- Keep the core meaning intact
+- Do NOT add new facts
+- Output ONLY the rewritten text"""
+
+
+def polish_iteration(text: str, style: str = "academic") -> str:
     """
-    Use Cerebras AI to humanize the given text.
-    
+    Minimal repair pass after NLP processing.
+    Fixes only genuinely broken words/phrases. Leaves everything else verbatim.
+
     Args:
-        text: The text to humanize
-        intensity: How aggressively to humanize ("light", "medium", "heavy")
-    
+        text: NLP-processed text that may have some broken substitutions
+        style: "academic" or "casual" (affects system context only)
+
     Returns:
-        Humanized text from the AI
+        Text with only broken parts corrected
     """
-    
-    intensity_prompts = {
-        "light": "Make subtle changes to sound more natural. Keep most of the original structure.",
-        "medium": "Rewrite to sound genuinely human while keeping the meaning. Apply moderate changes.",
-        "heavy": "Significantly rewrite to sound completely human-written. Be creative with structure and phrasing."
-    }
-    
-    user_prompt = f"""{intensity_prompts.get(intensity, intensity_prompts["medium"])}
+    style_note = (
+        "The text is academic writing — maintain formal register in any fix."
+        if style == "academic"
+        else "The text is casual writing — keep the conversational tone in any fix."
+    )
 
-Text to humanize:
-\"\"\"
-{text}
-\"\"\""""
-
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "model": MODEL,
-        "messages": [
-            {"role": "system", "content": HUMANIZE_SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt}
-        ],
-        "max_tokens": 4096,
-        "temperature": 0.8,  # Higher temperature for more creative/varied output
-        "top_p": 0.95
-    }
-    
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        if "choices" in result and len(result["choices"]) > 0:
-            return result["choices"][0]["message"]["content"].strip()
-        else:
-            raise Exception("No response content from Cerebras API")
-            
-    except requests.exceptions.Timeout:
-        raise Exception("Cerebras API request timed out")
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Cerebras API error: {str(e)}")
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": REPAIR_PROMPT + f"\n\nContext: {style_note}"},
+                {"role": "user", "content": f"Fix only what is broken in this text:\n\n{text}"}
+            ],
+            max_completion_tokens=4096,
+            temperature=0.15,   # Very low temperature — we want conservative, minimal changes
+            top_p=0.9
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return text  # If API fails, return original unchanged
 
 
-def polish_with_ai(text: str) -> str:
+def format_only(text: str) -> str:
     """
-    Light polish pass to clean up text after NLP processing.
+    Final formatting pass. Corrects ONLY mechanical spacing and punctuation.
+    Zero content changes permitted.
+
+    Args:
+        text: The fully humanized text
+
+    Returns:
+        Text with only formatting corrections applied
     """
-    
-    polish_prompt = """Lightly polish this text for readability. Fix any awkward phrasing from automated processing, but keep the content and style intact. Only make minimal necessary corrections.
-
-Text:
-\"\"\"
-{text}
-\"\"\""""
-
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "model": MODEL,
-        "messages": [
-            {"role": "system", "content": "You are a text editor. Make minimal corrections for readability. Output only the polished text."},
-            {"role": "user", "content": polish_prompt.format(text=text)}
-        ],
-        "max_tokens": 4096,
-        "temperature": 0.3  # Lower temperature for conservative edits
-    }
-    
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        if "choices" in result and len(result["choices"]) > 0:
-            return result["choices"][0]["message"]["content"].strip()
-        else:
-            return text  # Return original if API fails
-            
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": FORMAT_ONLY_PROMPT},
+                {"role": "user", "content": f"Apply formatting corrections only to this text:\n\n{text}"}
+            ],
+            max_completion_tokens=4096,
+            temperature=0.0,    # Zero temperature — purely deterministic formatting corrections
+            top_p=1.0
+        )
+        return response.choices[0].message.content.strip()
     except Exception:
-        return text  # Return original if any error
+        return text  # If API fails, return unchanged
 
 
-if __name__ == "__main__":
-    # Test the client
-    test_text = """Artificial intelligence has revolutionized numerous industries. It has enabled unprecedented advancements in healthcare, finance, and transportation. The implementation of machine learning algorithms has facilitated the automation of complex tasks. Furthermore, natural language processing has enhanced human-computer interaction significantly."""
-    
-    print("Original:")
-    print(test_text)
-    print("\n" + "="*50 + "\n")
-    print("Humanized:")
-    print(humanize_with_ai(test_text, "medium"))
+def translation_shuffle(text: str) -> str:
+    """
+    Translates text to German and then back to English.
+    This forcibly restructures sentences and erases original AI token sequences.
+    """
+    try:
+        # Step 1: English -> German
+        de_response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": TRANSLATE_TO_GERMAN_PROMPT},
+                {"role": "user", "content": f"Translate this text to German:\n\n{text}"}
+            ],
+            max_completion_tokens=4096,
+            temperature=0.7,
+        )
+        german_text = de_response.choices[0].message.content.strip()
+
+        # Step 2: German -> English
+        en_response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": TRANSLATE_TO_ENGLISH_PROMPT},
+                {"role": "user", "content": f"Translate this text to English:\n\n{german_text}"}
+            ],
+            max_completion_tokens=4096,
+            temperature=0.7,
+        )
+        english_text = en_response.choices[0].message.content.strip()
+
+        return english_text
+    except Exception:
+        return text  # Fallback to original text if API fails
+
+
+

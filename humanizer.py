@@ -113,7 +113,7 @@ CONTRACTIONS = {
     'let us': "let's",
 }
 
-# Informal transitions to inject
+# Informal transitions to inject (casual mode only)
 INFORMAL_TRANSITIONS = [
     "Plus, ",
     "Thing is, ",
@@ -127,7 +127,7 @@ INFORMAL_TRANSITIONS = [
     "On top of that, ",
 ]
 
-# Filler phrases for natural redundancy
+# Filler phrases for natural redundancy (casual mode only)
 FILLER_PHRASES = [
     "basically",
     "essentially",
@@ -137,6 +137,76 @@ FILLER_PHRASES = [
     "actually",
     "really",
 ]
+
+# AI clichés that detectors are trained to recognise — replace with varied alternatives
+AI_CLICHES = {
+    r'\bFurthermore\b': ['That said,', 'Even so,', 'Beyond this,', 'In addition,'],
+    r'\bfurthermore\b': ['that said,', 'beyond this,', 'in addition,', 'what is more,'],
+    r'\bMoreover\b': ['Still,', 'On reflection,', 'As it stands,', 'Of note,'],
+    r'\bmoreover\b': ['still,', 'on reflection,', 'as it stands,', 'worth noting,'],
+    r'\bAdditionally\b': ['Yet,', 'To this end,', 'Along these lines,', 'In turn,'],
+    r'\badditionally\b': ['yet,', 'to this end,', 'along these lines,', 'in turn,'],
+    r'\bIn conclusion\b': ['In sum,', 'On balance,', 'Taken together,', 'All things considered,'],
+    r'\bin conclusion\b': ['in sum,', 'on balance,', 'taken together,', 'all things considered,'],
+    r'\bIt is important to note that\b': ['It is worth considering that', 'One should bear in mind that', 'Crucially,'],
+    r'\bit is important to note that\b': ['it is worth considering that', 'one should bear in mind that', 'crucially,'],
+    r'\bIt is worth noting that\b': ['Of particular relevance,', 'Notably,', 'This is significant because'],
+    r'\bit is worth noting that\b': ['of particular relevance,', 'here,', 'this matters because'],
+    r'\bNotably\b': ['Of interest,', 'Tellingly,', 'Here,'],
+    r'\bnotably\b': ['of interest,', 'tellingly,', 'here,'],
+    r'\bSignificantly\b': ['Strikingly,', 'Tellingly,', 'Of note,'],
+    r'\bsignificantly\b': ['strikingly,', 'tellingly,', 'to a marked degree,'],
+    r'\bIn summary\b': ['In short,', 'On balance,', 'Taken together,'],
+    r'\bin summary\b': ['in short,', 'on balance,', 'taken together,'],
+    r'\bTo summarize\b': ['In brief,', 'Stepping back,', 'To draw this together,'],
+    r'\bto summarize\b': ['in brief,', 'stepping back,', 'to draw this together,'],
+    r'\bIn order to\b': ['To', 'So as to', 'With the aim of'],
+    r'\bin order to\b': ['to', 'so as to', 'with the aim of'],
+    r'\bplays a crucial role\b': ['is central to', 'matters greatly for', 'underpins'],
+    r'\bplays a significant role\b': ['bears heavily on', 'shapes', 'is central to'],
+    r'\bhas the potential to\b': ['can', 'may well', 'could'],
+    r'\bIt is clear that\b': ['Evidently,', 'The data suggest that', 'This points to'],
+    r'\bit is clear that\b': ['evidently,', 'the evidence suggests that', 'this points to'],
+    r'\boverarching\b': ['broader', 'general', 'governing'],
+    r'\brobust\b': ['strong', 'reliable', 'sound'],
+    r'\bseamless\b': ['smooth', 'fluid', 'uninterrupted'],
+    r'\bdelve\b': ['examine', 'explore', 'look into'],
+    r'\bunderscores\b': ['reinforces', 'confirms', 'supports'],
+    r'\belucidates\b': ['clarifies', 'explains', 'sheds light on'],
+    r'\bdemonstrates\b': ['shows', 'reveals', 'points to', 'indicates'],
+    r'\bfacilitates\b': ['enables', 'supports', 'helps', 'makes possible'],
+    r'\bfacilitates\b': ['enables', 'supports', 'helps', 'makes possible'],
+}
+
+SPELLING_PAIRS = {
+    "analyze": "analyse",
+    "analyzes": "analyses",
+    "color": "colour",
+    "colors": "colours",
+    "behavior": "behaviour",
+    "behaviors": "behaviours",
+    "organize": "organise",
+    "organizes": "organises",
+    "recognize": "recognise",
+    "recognizes": "recognises",
+    "realize": "realise",
+    "realizes": "realises",
+    "optimization": "optimisation",
+    "optimize": "optimise",
+    "center": "centre",
+    "centers": "centres",
+    "defense": "defence",
+    "license": "licence",
+    "traveling": "travelling",
+    "fueled": "fuelled",
+    "program": "programme",
+    "programs": "programmes",
+}
+
+# Add reverse mappings
+spelling_keys = list(SPELLING_PAIRS.keys())
+for k in spelling_keys:
+    SPELLING_PAIRS[SPELLING_PAIRS[k]] = k
 
 
 def get_wordnet_pos(treebank_tag):
@@ -397,40 +467,181 @@ def add_sentence_starters(text, rate=0.08):
     return " ".join(result)
 
 
+def mix_spellings(text):
+    """Randomly swaps US/UK spellings across the text to inject intentional slight inconsistencies."""
+    words = word_tokenize(text)
+    result_words = []
+    
+    for word in words:
+        lower_word = word.lower()
+        if lower_word in SPELLING_PAIRS and random.random() < 0.5:
+            # Swap spelling
+            swapped = SPELLING_PAIRS[lower_word]
+            # Preserve capitalization
+            if word.istitle():
+                swapped = swapped.capitalize()
+            elif word.isupper():
+                swapped = swapped.upper()
+            result_words.append(swapped)
+        else:
+            result_words.append(word)
+            
+    # Re-join intelligently to handle punctuation
+    result = " ".join(result_words)
+    result = re.sub(r'\s+([.,;:?!\'"])', r'\1', result)
+    result = result.replace(" 's", "'s").replace(" n't", "n't")
+    return result
+
+
+def flip_clauses(text):
+    """
+    Finds standard SVO sentences joined by 'because', 'although', or 'if'
+    and flips the clause order. (e.g. "A because B" -> "Because B, A")
+    """
+    sentences = sent_tokenize(text)
+    new_sentences = []
+    
+    flip_keywords = ["because", "although", "whereas", "while", "since"]
+    
+    for sentence in sentences:
+        # Only try to flip if the sentence is relatively simple (no complex inner punctuation)
+        if "," in sentence or ";" in sentence:
+            new_sentences.append(sentence)
+            continue
+            
+        words = word_tokenize(sentence.lower())
+        found_keyword = None
+        
+        for k in flip_keywords:
+            if k in words and words[0] != k:
+                found_keyword = k
+                break
+                
+        if found_keyword and random.random() < 0.7:  # 70% chance to flip if eligible
+            # We use regex to split cleanly around the keyword, preserving case of the keyword if any
+            pattern = re.compile(rf'\b({found_keyword})\b', re.IGNORECASE)
+            parts = pattern.split(sentence, maxsplit=1)
+            
+            if len(parts) == 3:
+                clause1 = parts[0].strip()
+                kw = parts[1].strip()
+                clause2 = parts[2].strip()
+                
+                # Remove trailing punctuation from clause2 if present to re-add at the end
+                end_punct = ""
+                if clause2 and clause2[-1] in ".!?":
+                    end_punct = clause2[-1]
+                    clause2 = clause2[:-1].strip()
+                
+                # Lowercase the first letter of clause1
+                if clause1:
+                    clause1 = clause1[0].lower() + clause1[1:]
+                
+                # Uppercase the keyword as it's now starting the sentence
+                kw = kw.capitalize()
+                
+                flipped = f"{kw} {clause2}, {clause1}{end_punct}"
+                new_sentences.append(flipped)
+            else:
+                new_sentences.append(sentence)
+        else:
+            new_sentences.append(sentence)
+            
+    return " ".join(new_sentences)
+
+
+def remove_ai_cliches(text):
+    """
+    Replace common AI-generated cliché phrases with varied human alternatives.
+    This targets the exact patterns AI detectors are trained on.
+    """
+    result = text
+    for pattern, replacements in AI_CLICHES.items():
+        matches = list(re.finditer(pattern, result))
+        for match in reversed(matches):  # reverse to preserve indices
+            replacement = random.choice(replacements)
+            result = result[:match.start()] + replacement + result[match.end():]
+    return result
+
+
 def humanize_text(text, options=None):
     """
-    Apply all NLP humanization techniques to the text.
-    
+    Apply NLP humanization techniques — casual mode.
+    Includes informal transitions, contractions, and casual starters.
+
     Args:
         text: Input text to humanize
         options: Dict of options to control which techniques to apply
-    
+
     Returns:
         Humanized text
     """
     if options is None:
         options = {}
-    
+
     result = text
-    
-    # Apply techniques based on options
+
+    # Always strip AI clichés first
+    result = remove_ai_cliches(result)
+
+    # Forced new techniques
+    result = flip_clauses(result)
+    result = mix_spellings(result)
+
     if options.get('synonyms', True):
         swap_rate = options.get('synonym_rate', 0.15)
         result = synonym_swap(result, swap_rate)
-    
+
     if options.get('contractions', True):
         result = add_contractions(result)
-    
-    if options.get('vary_length', True):
-        result = vary_sentence_length(result)
-    
+
+    # Vary length unconditionally
+    result = vary_sentence_length(result)
+
     if options.get('informal', True):
         rate = options.get('informal_rate', 0.1)
         result = inject_informal_elements(result, rate)
-    
+
     if options.get('casual_starters', True):
         result = add_sentence_starters(result)
+
+    return result
+
+
+def humanize_text_academic(text, options=None):
+    """
+    Apply NLP humanization techniques — academic mode.
+    Strips AI clichés and varies structure WITHOUT any informal language.
+    Never adds contractions, casual starters, or filler phrases.
+
+    Args:
+        text: Input text to humanize
+        options: Dict of options to control which techniques to apply
+
+    Returns:
+        Humanized text safe for academic use
+    """
+    if options is None:
+        options = {}
+
+    result = text
+
+    # Step 1: Kill AI clichés — highest impact for detector bypass
+    result = remove_ai_cliches(result)
+
+    # Step 2: Structural randomization
+    result = flip_clauses(result)
     
+    # Step 3: Spelling inconsistencies
+    result = mix_spellings(result)
+
+    # Step 4: Synonym variation
+    swap_rate = options.get('synonym_rate', 0.12)
+    result = synonym_swap(result, swap_rate)
+
+    # Step 5: Sentence length variation
+    result = vary_sentence_length(result)
+
     return result
 
 

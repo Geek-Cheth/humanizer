@@ -11,8 +11,8 @@ import jwt
 import requests
 from dotenv import load_dotenv
 
-from humanizer import humanize_text
-from cerebras_client import humanize_with_ai, polish_with_ai
+from humanizer import humanize_text, humanize_text_academic, remove_ai_cliches
+from cerebras_client import polish_iteration, format_only
 
 # Load environment variables
 load_dotenv()
@@ -152,95 +152,108 @@ def serve_static(filename):
 @require_auth
 def humanize():
     """
-    Main humanization endpoint (requires authentication).
-    
+    Multi-pass humanization endpoint.
+
     Expects JSON body:
     {
         "text": "Text to humanize",
-        "mode": "balanced" | "nlp_only" | "ai_only",
-        "intensity": "light" | "medium" | "heavy",
-        "options": {
-            "synonyms": true,
-            "contractions": true,
-            "vary_length": true,
-            "informal": true,
-            "casual_starters": true,
-            "ai_polish": true
-        }
+        "style": "academic" | "casual",
+        "passes": 1-5
     }
+
+    Pipeline (per pass):
+        1. Translation Shuffle (EN -> DE -> EN)
+        2. NLP transform (synonym swap, cliché removal, spelling mix, clause flip)
+        3. AI repair  — ONLY fixes broken/nonsensical NLP output, keeps rest verbatim
+    Final step:
+        AI format-only — corrects spacing/punctuation, zero content changes
     """
     try:
         data = request.get_json()
-        
+
         if not data or 'text' not in data:
             return jsonify({'error': 'No text provided'}), 400
-        
+
         text = data['text'].strip()
         if not text:
             return jsonify({'error': 'Text cannot be empty'}), 400
-        
-        mode = data.get('mode', 'balanced')
-        intensity = data.get('intensity', 'medium')
-        options = data.get('options', {})
-        
+
+        style = data.get('style', 'academic')       # 'academic' or 'casual'
+        passes = max(1, min(5, int(data.get('passes', 2))))  # clamp 1–5
+
+        # ── NLP options per pass ─────────────────────────────────────────────────
+        # Always aggressive to aim for 0% detection
+        base_synonym_rate = 0.20
+
+        # Academic NLP options (no contractions / informal / casual starters)
+        academic_nlp_opts = {
+            'synonyms': True,
+            'synonym_rate': base_synonym_rate,
+            'vary_length': True,
+            'contractions': False,
+            'informal': False,
+            'casual_starters': False,
+        }
+
+        # Casual NLP options
+        casual_nlp_opts = {
+            'synonyms': True,
+            'synonym_rate': base_synonym_rate,
+            'vary_length': True,
+            'contractions': True,
+            'informal': True,
+            'informal_rate': 0.15,
+            'casual_starters': True,
+        }
+
+        nlp_opts = academic_nlp_opts if style == 'academic' else casual_nlp_opts
+        nlp_fn = humanize_text_academic if style == 'academic' else humanize_text
+
         result = text
         steps = []
-        
-        if mode == 'ai_only':
-            # Only use AI humanization
-            steps.append('AI Humanization')
-            result = humanize_with_ai(result, intensity)
-            
-        elif mode == 'nlp_only':
-            # Only use NLP techniques
-            steps.append('NLP Processing')
-            nlp_options = {
-                'synonyms': options.get('synonyms', True),
-                'contractions': options.get('contractions', True),
-                'vary_length': options.get('vary_length', True),
-                'informal': options.get('informal', True),
-                'casual_starters': options.get('casual_starters', True),
-                'synonym_rate': 0.1 if intensity == 'light' else (0.2 if intensity == 'medium' else 0.3),
-                'informal_rate': 0.05 if intensity == 'light' else (0.1 if intensity == 'medium' else 0.15),
-            }
-            result = humanize_text(result, nlp_options)
-        else:  # balanced mode
-            # Step 1: AI humanization first
-            steps.append('AI Humanization')
-            result = humanize_with_ai(result, intensity)
-            
-            # Step 2: Apply NLP techniques for additional variation
-            steps.append('NLP Enhancement')
-            nlp_options = {
-                'synonyms': options.get('synonyms', True),
-                'synonym_rate': 0.08,  # Lower rate since AI already made changes
-                'contractions': options.get('contractions', True),
-                'vary_length': False,  # AI handles this well
-                'informal': options.get('informal', False),  # Light touch
-                'informal_rate': 0.05,
-                'casual_starters': False,  # AI handles this
-            }
-            result = humanize_text(result, nlp_options)
-            
-            # Step 3: Optional AI polish
-            if options.get('ai_polish', False):
-                steps.append('AI Polish')
-                result = polish_with_ai(result)
-        
+
+        # ── Strip AI clichés once before any passes ───────────────────────────────
+        result = remove_ai_cliches(result)
+        steps.append('AI Cliché Removal')
+
+        # ── Multi-pass loop ──────────────────────────────────────────────────────
+        for i in range(passes):
+            pass_num = i + 1
+
+            # Step A: Translation Shuffle (Lexical Destruction)
+            from cerebras_client import translation_shuffle
+            result = translation_shuffle(result)
+            steps.append(f'Pass {pass_num}/{passes} — Translation Shuffle (EN→DE→EN)')
+
+            # Step B: NLP transformation
+            result = nlp_fn(result, nlp_opts)
+            steps.append(f'Pass {pass_num}/{passes} — NLP Transform (Clauses & Syntax)')
+
+            # Step C: AI repair — only fix what NLP broke, everything else stays
+            result = polish_iteration(result, style)
+            steps.append(f'Pass {pass_num}/{passes} — AI Repair')
+
+        # ── Final pass: formatting only — ZERO content changes ────────────────────
+        result = format_only(result)
+        steps.append('Final — Spacing & Formatting Fix')
+
         return jsonify({
             'success': True,
             'original': text,
             'humanized': result,
-            'mode': mode,
-            'intensity': intensity,
+            'style': style,
+            'passes': passes,
             'steps': steps
         })
-        
+
     except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e)
         }), 500
+
+
+
 
 
 @app.route('/api/health', methods=['GET'])

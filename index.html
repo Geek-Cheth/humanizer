@@ -162,62 +162,32 @@
 
                 <div class="settings-content">
                     <div class="setting-group">
-                        <label class="setting-label">Mode</label>
+                        <label class="setting-label">Writing Style</label>
                         <div class="mode-tabs">
                             <label class="mode-tab">
-                                <input type="radio" name="mode" value="balanced" checked>
-                                <span>Balanced</span>
+                                <input type="radio" name="style" value="academic" checked>
+                                <span>Academic</span>
                             </label>
                             <label class="mode-tab">
-                                <input type="radio" name="mode" value="ai_only">
-                                <span>AI Only</span>
-                            </label>
-                            <label class="mode-tab">
-                                <input type="radio" name="mode" value="nlp_only">
-                                <span>NLP Only</span>
+                                <input type="radio" name="style" value="casual">
+                                <span>Casual</span>
                             </label>
                         </div>
                     </div>
 
+
+
                     <div class="setting-group">
-                        <label class="setting-label">Intensity</label>
+                        <label class="setting-label">Repetition</label>
                         <div class="intensity-track">
-                            <input type="range" id="intensity" min="0" max="2" value="1" class="intensity-slider">
-                            <div class="intensity-markers">
-                                <span>Light</span>
-                                <span>Medium</span>
-                                <span>Heavy</span>
+                            <input type="range" id="passes" min="1" max="5" value="2" class="intensity-slider">
+                            <div class="intensity-markers" style="justify-content: space-between;">
+                                <span>1</span>
+                                <span>2</span>
+                                <span>3</span>
+                                <span>4</span>
+                                <span>5</span>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="setting-group">
-                        <label class="setting-label">Techniques</label>
-                        <div class="technique-grid">
-                            <label class="technique-chip">
-                                <input type="checkbox" id="opt-synonyms" checked>
-                                <span>Synonyms</span>
-                            </label>
-                            <label class="technique-chip">
-                                <input type="checkbox" id="opt-contractions" checked>
-                                <span>Contractions</span>
-                            </label>
-                            <label class="technique-chip">
-                                <input type="checkbox" id="opt-vary-length" checked>
-                                <span>Vary Length</span>
-                            </label>
-                            <label class="technique-chip">
-                                <input type="checkbox" id="opt-informal" checked>
-                                <span>Informal</span>
-                            </label>
-                            <label class="technique-chip">
-                                <input type="checkbox" id="opt-starters" checked>
-                                <span>Starters</span>
-                            </label>
-                            <label class="technique-chip">
-                                <input type="checkbox" id="opt-polish">
-                                <span>AI Polish</span>
-                            </label>
                         </div>
                     </div>
                 </div>
