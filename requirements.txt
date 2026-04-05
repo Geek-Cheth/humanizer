@@ -1,6 +1,6 @@
 flask
 flask-cors
-cerebras-cloud-sdk
+openai
 python-dotenv
 PyJWT
 cryptography
