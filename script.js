@@ -1,6 +1,6 @@
 /**
- * Text Humanizer - Premium UI/UX with Clerk Authentication
- * Custom cursor, magnetic effects, smooth scroll, reveal animations, auth
+ * AI Text Humanizer - Modern Workstation & SSE EventStream Controller
+ * Real-time AI detection analysis, SSE streaming, interactive diff viewer, docx exporter.
  */
 
 // ============================================
@@ -10,849 +10,523 @@ const isLocalhost = window.location.hostname === 'localhost' || window.location.
 const API_BASE = isLocalhost ? 'http://localhost:5000' : '';
 
 // ============================================
-// Clerk Authentication State
+// Global State
 // ============================================
-let clerkLoaded = false;
 let isAuthenticated = false;
 let sessionToken = null;
-
-// Clerk appearance configuration for dark theme
-const clerkAppearance = {
-    baseTheme: undefined,
-    layout: {
-        socialButtonsPlacement: 'top',
-        socialButtonsVariant: 'blockButton',
-        shimmer: true
-    },
-    variables: {
-        colorPrimary: '#6366f1',
-        colorBackground: '#0d0d12',
-        colorInputBackground: '#1c1c26',
-        colorInputText: '#f5f5f7',
-        colorText: '#f5f5f7',
-        colorTextSecondary: '#a0a0b0',
-        colorTextOnPrimaryBackground: '#ffffff',
-        colorDanger: '#f87171',
-        colorSuccess: '#34d399',
-        colorWarning: '#fbbf24',
-        colorNeutral: '#6b6b7b',
-        colorShimmer: 'rgba(99, 102, 241, 0.1)',
-        borderRadius: '12px',
-        fontFamily: 'Outfit, sans-serif',
-        fontFamilyButtons: 'Syne, sans-serif',
-        fontSmoothing: 'antialiased',
-        fontSize: '15px',
-        spacingUnit: '16px'
-    },
-    elements: {
-        // Modal backdrop
-        modalBackdrop: {
-            backgroundColor: 'rgba(8, 8, 12, 0.85)',
-            backdropFilter: 'blur(8px)'
-        },
-        // Root container
-        rootBox: {
-            boxShadow: '0 25px 80px -12px rgba(0, 0, 0, 0.8)'
-        },
-        // Main card
-        card: {
-            backgroundColor: '#0d0d12',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '20px',
-            boxShadow: '0 25px 80px -12px rgba(0, 0, 0, 0.8), 0 0 80px rgba(99, 102, 241, 0.15)',
-            padding: '32px'
-        },
-        // Header
-        headerTitle: {
-            color: '#ffffff',
-            fontFamily: 'Syne, sans-serif',
-            fontWeight: '700',
-            fontSize: '1.5rem'
-        },
-        headerSubtitle: {
-            color: '#a0a0b0',
-            fontSize: '0.95rem'
-        },
-        // Social buttons (Google, GitHub, etc.)
-        socialButtonsBlockButton: {
-            backgroundColor: '#1c1c26',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: '#f5f5f7',
-            borderRadius: '12px',
-            padding: '14px 20px',
-            fontSize: '0.95rem',
-            fontWeight: '500',
-            transition: 'all 0.2s ease',
-            '&:hover': {
-                backgroundColor: '#242432',
-                borderColor: '#6366f1',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
-            }
-        },
-        socialButtonsBlockButtonText: {
-            color: '#f5f5f7',
-            fontWeight: '500'
-        },
-        // Social button icons
-        socialButtonsIconButton: {
-            backgroundColor: '#1c1c26',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '12px',
-            '&:hover': {
-                backgroundColor: '#242432',
-                borderColor: '#6366f1'
-            }
-        },
-        socialButtonsProviderIcon: {
-            // White background makes colored icons visible
-            backgroundColor: '#ffffff',
-            borderRadius: '6px',
-            padding: '3px'
-        },
-        // Divider
-        dividerLine: {
-            backgroundColor: 'rgba(255, 255, 255, 0.1)'
-        },
-        dividerText: {
-            color: '#6b6b7b',
-            fontSize: '0.8rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em'
-        },
-        // Form labels
-        formFieldLabel: {
-            color: '#a0a0b0',
-            fontSize: '0.75rem',
-            fontWeight: '600',
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
-            marginBottom: '8px'
-        },
-        // Input fields
-        formFieldInput: {
-            backgroundColor: '#1c1c26',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#f5f5f7',
-            borderRadius: '10px',
-            padding: '14px 16px',
-            fontSize: '1rem',
-            transition: 'all 0.2s ease',
-            '&:focus': {
-                borderColor: '#6366f1',
-                boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.15)',
-                backgroundColor: '#242432'
-            },
-            '&::placeholder': {
-                color: '#52525e'
-            }
-        },
-        // Primary button (Continue, Sign in)
-        formButtonPrimary: {
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-            color: '#ffffff',
-            borderRadius: '9999px',
-            fontFamily: 'Syne, sans-serif',
-            fontWeight: '600',
-            fontSize: '1rem',
-            padding: '14px 28px',
-            border: 'none',
-            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.3)',
-            transition: 'all 0.2s ease',
-            '&:hover': {
-                background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(99, 102, 241, 0.4)'
-            },
-            '&:active': {
-                transform: 'translateY(0)'
-            }
-        },
-        // Footer links
-        footerActionLink: {
-            color: '#6366f1',
-            fontWeight: '500',
-            transition: 'color 0.2s ease',
-            '&:hover': {
-                color: '#818cf8'
-            }
-        },
-        footerActionText: {
-            color: '#6b6b7b'
-        },
-        // Identity preview
-        identityPreviewText: {
-            color: '#f5f5f7'
-        },
-        identityPreviewEditButton: {
-            color: '#6366f1',
-            '&:hover': {
-                color: '#818cf8'
-            }
-        },
-        // Form actions (Forgot password, etc.)
-        formFieldAction: {
-            color: '#6366f1',
-            fontSize: '0.85rem',
-            '&:hover': {
-                color: '#818cf8'
-            }
-        },
-        // Alerts
-        alert: {
-            backgroundColor: 'rgba(248, 113, 113, 0.1)',
-            border: '1px solid rgba(248, 113, 113, 0.3)',
-            borderRadius: '10px'
-        },
-        alertText: {
-            color: '#f5f5f7'
-        },
-        // Close button
-        modalCloseButton: {
-            color: '#6b6b7b',
-            transition: 'color 0.2s ease',
-            '&:hover': {
-                color: '#f5f5f7'
-            }
-        },
-        // OTP inputs
-        otpCodeFieldInput: {
-            backgroundColor: '#1c1c26',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#f5f5f7',
-            borderRadius: '10px',
-            '&:focus': {
-                borderColor: '#6366f1',
-                boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.15)'
-            }
-        },
-        // Avatar
-        avatarBox: {
-            border: '2px solid #6366f1'
-        },
-        // Badge
-        badge: {
-            backgroundColor: 'rgba(99, 102, 241, 0.2)',
-            color: '#a5b4fc'
-        },
-        // User button
-        userButtonPopoverCard: {
-            backgroundColor: '#0d0d12',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '16px'
-        },
-        userButtonPopoverActionButton: {
-            color: '#f5f5f7',
-            '&:hover': {
-                backgroundColor: '#1c1c26'
-            }
-        },
-        userButtonPopoverActionButtonIcon: {
-            color: '#a0a0b0'
-        },
-        userButtonPopoverFooter: {
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)'
-        }
-    }
-};
-
-// Wait for Clerk to load
-async function initClerk() {
-    try {
-        // Wait for Clerk to be available
-        while (!window.Clerk) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        await window.Clerk.load({
-            appearance: clerkAppearance
-        });
-        clerkLoaded = true;
-
-        // Check initial auth state
-        updateAuthState();
-
-        // Listen for auth changes
-        window.Clerk.addListener(updateAuthState);
-
-        console.log('Clerk initialized with dark theme');
-    } catch (error) {
-        console.error('Error initializing Clerk:', error);
-    }
-}
-
-async function updateAuthState() {
-    if (!clerkLoaded) return;
-
-    const user = window.Clerk.user;
-    isAuthenticated = !!user;
-
-    // Get session token for API calls
-    if (isAuthenticated) {
-        try {
-            const session = window.Clerk.session;
-            sessionToken = await session.getToken();
-        } catch (e) {
-            sessionToken = null;
-        }
-    } else {
-        sessionToken = null;
-    }
-
-    // Update UI
-    updateAuthUI();
-}
-
-function updateAuthUI() {
-    const authBtn = document.getElementById('auth-btn');
-    const authText = document.getElementById('auth-text');
-    const authOverlay = document.getElementById('auth-overlay');
-
-    if (isAuthenticated && window.Clerk.user) {
-        // Show user info
-        const user = window.Clerk.user;
-        const firstName = user.firstName || 'User';
-
-        authBtn.classList.add('authenticated');
-        authText.textContent = firstName;
-
-        // Hide auth overlay
-        authOverlay.classList.remove('visible');
-
-        // Update status
-        updateApiStatus('Ready', 'success');
-    } else {
-        // Show sign in
-        authBtn.classList.remove('authenticated');
-        authText.textContent = 'Sign In';
-
-        // Show auth overlay
-        authOverlay.classList.add('visible');
-
-        // Update status
-        updateApiStatus('Sign In Required', 'warning');
-    }
-}
-
-function openSignIn() {
-    if (clerkLoaded && window.Clerk) {
-        window.Clerk.openSignIn({
-            appearance: clerkAppearance,
-            afterSignInUrl: window.location.href,
-            afterSignUpUrl: window.location.href
-        });
-    }
-}
-
-function handleAuthClick() {
-    if (!clerkLoaded) return;
-
-    if (isAuthenticated) {
-        // Open user profile with dark theme
-        window.Clerk.openUserProfile({
-            appearance: clerkAppearance
-        });
-    } else {
-        openSignIn();
-    }
-}
-
-// Initialize Clerk
-initClerk();
+let activeStyle = 'academic';
+let activePasses = 2;
+let originalText = '';
+let humanizedText = '';
+let analyzeDebounceTimer = null;
 
 // ============================================
-// Lenis Smooth Scroll
+// DOM Elements
 // ============================================
-const lenis = new Lenis({
-    duration: 1.2,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    orientation: 'vertical',
-    gestureOrientation: 'vertical',
-    smoothWheel: true,
-    wheelMultiplier: 1,
-    touchMultiplier: 2,
-    infinite: false,
+const inputText = document.getElementById('input-text');
+const inputHighlight = document.getElementById('input-highlight');
+const inputWordCount = document.getElementById('input-word-count');
+const inputCharCount = document.getElementById('input-char-count');
+const inputReadability = document.getElementById('input-readability');
+
+const outputText = document.getElementById('output-text');
+const diffText = document.getElementById('diff-text');
+const outputWordCount = document.getElementById('output-word-count');
+const outputCharCount = document.getElementById('output-char-count');
+const outputReadability = document.getElementById('output-readability');
+
+const humanizeBtn = document.getElementById('humanize-btn');
+const scanBtn = document.getElementById('scan-btn');
+const pasteBtn = document.getElementById('paste-btn');
+const clearBtn = document.getElementById('clear-btn');
+const copyBtn = document.getElementById('copy-btn');
+const downloadDocxBtn = document.getElementById('download-docx-btn');
+const downloadTxtBtn = document.getElementById('download-txt-btn');
+
+const passesSlider = document.getElementById('passes-slider');
+const passesVal = document.getElementById('passes-val');
+const streamProgressBar = document.getElementById('stream-progress-bar');
+const streamProgressFill = document.getElementById('stream-progress-fill');
+const stepsList = document.getElementById('steps-list');
+
+const aiScoreVal = document.getElementById('ai-score-val');
+const gaugeFill = document.getElementById('gauge-fill');
+const metricBurstiness = document.getElementById('metric-burstiness');
+const metricPerplexity = document.getElementById('metric-perplexity');
+
+const detGptzero = document.getElementById('det-gptzero');
+const detValGptzero = document.getElementById('det-val-gptzero');
+const detTurnitin = document.getElementById('det-turnitin');
+const detValTurnitin = document.getElementById('det-val-turnitin');
+const detCopyleaks = document.getElementById('det-copyleaks');
+const detValCopyleaks = document.getElementById('det-val-copyleaks');
+const detZerogpt = document.getElementById('det-zerogpt');
+const detValZerogpt = document.getElementById('det-val-zerogpt');
+
+const apiStatus = document.getElementById('api-status');
+const pageLoader = document.getElementById('page-loader');
+
+// ============================================
+// Init Page & Animations
+// ============================================
+window.addEventListener('load', () => {
+    if (pageLoader) {
+        setTimeout(() => {
+            pageLoader.style.opacity = '0';
+            setTimeout(() => pageLoader.style.display = 'none', 500);
+        }, 300);
+    }
 });
 
+// Lenis smooth scroll init
+const lenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
 function raf(time) {
     lenis.raf(time);
     requestAnimationFrame(raf);
 }
 requestAnimationFrame(raf);
 
-// ============================================
-// Disable Lenis for Clerk modal elements
-// ============================================
-// Lenis should ignore scroll events on Clerk modals
-document.addEventListener('wheel', (e) => {
-    const clerkElement = e.target.closest('.cl-rootBox, .cl-modalBackdrop, .cl-scrollBox, .cl-pageScrollBox, .cl-userProfile-root');
-    if (clerkElement) {
-        e.stopPropagation();
-    }
-}, { passive: false, capture: true });
-
-// Lock body scroll when Clerk modal is open
-function checkForClerkModal() {
-    const clerkModal = document.querySelector('.cl-modalBackdrop');
-    if (clerkModal) {
-        document.body.style.overflow = 'hidden';
-    } else {
-        document.body.style.overflow = '';
-    }
-}
-
-// Watch for Clerk modal changes
-const clerkObserver = new MutationObserver(checkForClerkModal);
-clerkObserver.observe(document.body, { childList: true, subtree: false });
-
-// ============================================
-// Custom Cursor
-// ============================================
+// Custom Cursor Tracker
 const cursorDot = document.getElementById('cursor-dot');
 const cursorRing = document.getElementById('cursor-ring');
-
-let mouseX = 0, mouseY = 0;
-let ringX = 0, ringY = 0;
-let dotX = 0, dotY = 0;
-
-// Check if touch device
-const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-if (!isTouchDevice && cursorDot && cursorRing) {
-    document.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-    });
-
-    document.addEventListener('mousedown', () => {
-        cursorDot.classList.add('clicking');
-        cursorRing.classList.add('clicking');
-    });
-
-    document.addEventListener('mouseup', () => {
-        cursorDot.classList.remove('clicking');
-        cursorRing.classList.remove('clicking');
-    });
-
-    // Cursor animation loop
-    function animateCursor() {
-        // Dot follows immediately
-        dotX += (mouseX - dotX) * 0.5;
-        dotY += (mouseY - dotY) * 0.5;
-
-        // Ring follows with delay
-        ringX += (mouseX - ringX) * 0.15;
-        ringY += (mouseY - ringY) * 0.15;
-
-        cursorDot.style.left = `${dotX}px`;
-        cursorDot.style.top = `${dotY}px`;
-        cursorRing.style.left = `${ringX}px`;
-        cursorRing.style.top = `${ringY}px`;
-
-        requestAnimationFrame(animateCursor);
-    }
-    animateCursor();
-
-    // Hover effects
-    const hoverElements = document.querySelectorAll('button, a, input, textarea, label, .magnetic-btn');
-    hoverElements.forEach(el => {
-        el.addEventListener('mouseenter', () => {
-            cursorDot.classList.add('hovering');
-            cursorRing.classList.add('hovering');
-        });
-        el.addEventListener('mouseleave', () => {
-            cursorDot.classList.remove('hovering');
-            cursorRing.classList.remove('hovering');
-        });
+if (cursorDot && cursorRing) {
+    window.addEventListener('mousemove', (e) => {
+        cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+        cursorRing.animate({ transform: `translate(${e.clientX - 16}px, ${e.clientY - 16}px)` }, { duration: 300, fill: 'forwards' });
     });
 }
 
-// ============================================
-// Magnetic Button Effect
-// ============================================
-const magneticButtons = document.querySelectorAll('.magnetic-btn');
-
-magneticButtons.forEach(btn => {
-    btn.addEventListener('mousemove', (e) => {
-        const rect = btn.getBoundingClientRect();
-        const x = e.clientX - rect.left - rect.width / 2;
-        const y = e.clientY - rect.top - rect.height / 2;
-
-        btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
-    });
-
-    btn.addEventListener('mouseleave', () => {
-        btn.style.transform = '';
-    });
-});
-
-// ============================================
-// Reveal Animations
-// ============================================
-const revealElements = document.querySelectorAll('.reveal-element, .reveal-text');
-
-const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('revealed');
-        }
-    });
-}, {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-});
-
-revealElements.forEach(el => revealObserver.observe(el));
-
-// Initial reveal for above-fold elements
-setTimeout(() => {
-    document.querySelectorAll('.header .reveal-element, .header .reveal-text').forEach(el => {
-        el.classList.add('revealed');
-    });
-}, 100);
-
-// ============================================
-// Page Loader
-// ============================================
-window.addEventListener('load', () => {
-    const loader = document.getElementById('page-loader');
-    setTimeout(() => {
-        loader.classList.add('hidden');
-
-        // Trigger initial reveals
-        setTimeout(() => {
-            revealElements.forEach(el => {
-                if (el.getBoundingClientRect().top < window.innerHeight) {
-                    el.classList.add('revealed');
-                }
-            });
-        }, 200);
-    }, 600);
-});
-
-// ============================================
-// DOM Elements
-// ============================================
-const inputText = document.getElementById('input-text');
-const outputText = document.getElementById('output-text');
-const humanizeBtn = document.getElementById('humanize-btn');
-const pasteBtn = document.getElementById('paste-btn');
-const clearBtn = document.getElementById('clear-btn');
-const copyBtn = document.getElementById('copy-btn');
-const passesSlider = document.getElementById('passes');
-const processingInfo = document.getElementById('processing-info');
-const stepsList = document.getElementById('steps-list');
-const apiStatus = document.getElementById('api-status');
-
-// Auth elements
-const authBtn = document.getElementById('auth-btn');
-const authCta = document.getElementById('auth-cta');
-const authOverlay = document.getElementById('auth-overlay');
-
-// Word count elements
-const inputWordCount = document.getElementById('input-word-count');
-const inputCharCount = document.getElementById('input-char-count');
-const outputWordCount = document.getElementById('output-word-count');
-const outputCharCount = document.getElementById('output-char-count');
-
-// Toast element
-const toast = document.getElementById('toast');
-
-// ============================================
-// Auth Event Listeners
-// ============================================
-if (authBtn) {
-    authBtn.addEventListener('click', handleAuthClick);
-}
-
-if (authCta) {
-    authCta.addEventListener('click', openSignIn);
-}
-
-// ============================================
-// Toast Notification
-// ============================================
-function showToast(message, type = 'success') {
-    const toastIcon = toast.querySelector('.toast-icon');
+// Toast Helper
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
     const toastMessage = toast.querySelector('.toast-message');
+    const toastIcon = toast.querySelector('.toast-icon');
 
-    toastIcon.textContent = type === 'success' ? '✓' : '✕';
     toastMessage.textContent = message;
-
-    toast.className = `toast ${type}`;
-    toast.classList.add('show');
+    toastIcon.textContent = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+    toast.className = `toast toast-${type} show`;
 
     setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
+        toast.className = 'toast';
+    }, 3500);
 }
 
 // ============================================
-// Word Count
+// Preset Pills & Slider Handlers
 // ============================================
-function countWords(text) {
-    return text.trim() ? text.trim().split(/\s+/).length : 0;
-}
-
-function updateInputCounts() {
-    const text = inputText.value;
-    inputWordCount.textContent = countWords(text);
-    inputCharCount.textContent = text.length;
-}
-
-function updateOutputCounts(text) {
-    outputWordCount.textContent = countWords(text);
-    outputCharCount.textContent = text.length;
-}
-
-// ============================================
-// Settings
-// ============================================
-function getSettings() {
-    const styleRadio = document.querySelector('input[name="style"]:checked');
-    const style = styleRadio ? styleRadio.value : 'academic';
-
-    const passes = parseInt(passesSlider.value) || 2;
-
-    return { style, passes };
-}
-
-// ============================================
-// Loading State
-// ============================================
-function setLoading(isLoading) {
-    if (isLoading) {
-        humanizeBtn.classList.add('loading');
-        humanizeBtn.disabled = true;
-        updateApiStatus('Processing...', 'warning');
-    } else {
-        humanizeBtn.classList.remove('loading');
-        humanizeBtn.disabled = false;
-        updateApiStatus('Ready', 'success');
-    }
-}
-
-function updateApiStatus(text, status) {
-    if (apiStatus) {
-        const statusDot = apiStatus.querySelector('.status-dot');
-        const statusText = apiStatus.querySelector('.status-text');
-
-        statusText.textContent = text;
-        statusDot.style.background = status === 'success' ? 'var(--success)' :
-            status === 'warning' ? 'var(--warning)' :
-                'var(--error)';
-    }
-}
-
-// ============================================
-// Processing Steps Display
-// ============================================
-function displaySteps(steps) {
-    stepsList.innerHTML = '';
-    steps.forEach(step => {
-        const li = document.createElement('li');
-        li.textContent = step;
-        stepsList.appendChild(li);
+document.querySelectorAll('.preset-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+        document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeStyle = pill.getAttribute('data-style');
+        showToast(`Switched to ${pill.textContent.trim()} mode`, 'info');
     });
-    processingInfo.style.display = 'block';
+});
+
+if (passesSlider && passesVal) {
+    passesSlider.addEventListener('input', (e) => {
+        activePasses = parseInt(e.target.value);
+        passesVal.textContent = activePasses;
+    });
 }
 
+// Tab Switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+
+        btn.classList.add('active');
+        const targetTab = btn.getAttribute('data-tab');
+        const pane = document.getElementById(`tab-${targetTab}`);
+        if (pane) pane.style.display = 'block';
+    });
+});
+
 // ============================================
-// Humanize Function (with Auth)
+// Text Stats & Real-Time AI Analyzer
 // ============================================
-async function humanize() {
-    // Check authentication first
-    if (!isAuthenticated) {
-        showToast('Please sign in to use the humanizer', 'error');
-        openSignIn();
-        return;
+function updateInputStats() {
+    const text = inputText.value;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    inputWordCount.textContent = words;
+    inputCharCount.textContent = text.length;
+
+    // Synchronize highlight overlay scroll & content
+    if (inputHighlight) {
+        inputHighlight.scrollTop = inputText.scrollTop;
     }
 
-    // Refresh token if needed
-    if (window.Clerk && window.Clerk.session) {
-        try {
-            sessionToken = await window.Clerk.session.getToken();
-        } catch (e) {
-            showToast('Session expired, please sign in again', 'error');
-            openSignIn();
-            return;
-        }
+    // Debounced fast AI detection scanner call
+    clearTimeout(analyzeDebounceTimer);
+    if (text.trim().length > 30) {
+        analyzeDebounceTimer = setTimeout(() => scanInputText(), 600);
     }
+}
 
+inputText.addEventListener('input', updateInputStats);
+inputText.addEventListener('scroll', () => {
+    if (inputHighlight) inputHighlight.scrollTop = inputText.scrollTop;
+});
+
+async function scanInputText() {
     const text = inputText.value.trim();
-
-    if (!text) {
-        showToast('Please enter some text to humanize', 'error');
-        return;
-    }
-
-    setLoading(true);
-    processingInfo.style.display = 'none';
+    if (!text) return;
 
     try {
-        const settings = getSettings();
+        const response = await fetch(`${API_BASE}/api/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        const data = await response.json();
+        if (data.success) {
+            renderAIScorecard(data.ai_score);
+            renderReadability(inputReadability, data.readability);
+            highlightAISignals(text, data.signals);
+        }
+    } catch (err) {
+        console.warn('Analysis engine offline or error:', err);
+    }
+}
 
-        const response = await fetch(`${API_BASE}/api/humanize`, {
+if (scanBtn) scanBtn.addEventListener('click', scanInputText);
+
+function renderAIScorecard(scores) {
+    if (!scores) return;
+
+    const prob = Math.round(scores.ai_probability);
+    aiScoreVal.textContent = `${prob}%`;
+
+    // Radial Gauge ring (314 is full circumference for r=50)
+    if (gaugeFill) {
+        const offset = 314 - (314 * (prob / 100));
+        gaugeFill.style.strokeDashoffset = offset;
+        gaugeFill.style.stroke = prob > 70 ? '#f87171' : prob > 35 ? '#fbbf24' : '#34d399';
+    }
+
+    // Detectors
+    const dets = scores.detectors || {};
+    setDetBar(detGptzero, detValGptzero, dets.gptzero);
+    setDetBar(detTurnitin, detValTurnitin, dets.turnitin);
+    setDetBar(detCopyleaks, detValCopyleaks, dets.copyleaks);
+    setDetBar(detZerogpt, detValZerogpt, dets.zerogpt);
+
+    // Metrics
+    if (metricBurstiness) metricBurstiness.textContent = `${Math.round(scores.burstiness)}/100`;
+    if (metricPerplexity) metricPerplexity.textContent = `${Math.round(scores.perplexity)}/100`;
+}
+
+function setDetBar(barEl, valEl, val) {
+    if (!barEl || !valEl) return;
+    const score = Math.round(val || 0);
+    barEl.style.width = `${score}%`;
+    barEl.style.backgroundColor = score > 70 ? '#f87171' : score > 35 ? '#fbbf24' : '#34d399';
+    valEl.textContent = `${score}%`;
+}
+
+function renderReadability(targetEl, r) {
+    if (!targetEl || !r) return;
+    targetEl.innerHTML = `<span>Grade <strong>${r.grade_level}</strong> (Ease: ${r.reading_ease})</span>`;
+}
+
+function highlightAISignals(text, signals) {
+    if (!inputHighlight || !signals || signals.length === 0) {
+        if (inputHighlight) inputHighlight.innerHTML = '';
+        return;
+    }
+    // Escape text for HTML overlay
+    let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    signals.forEach(sig => {
+        const regex = new RegExp(`\\b${escapeRegExp(sig.phrase)}\\b`, 'gi');
+        html = html.replace(regex, `<span class="ai-flagged-word" title="Flagged AI Phrase: '${sig.phrase}' → Suggestions: ${sig.suggestions.join(', ')}">$&</span>`);
+    });
+    inputHighlight.innerHTML = html + '\n';
+}
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ============================================
+// SSE Streaming Humanization Engine
+// ============================================
+async function humanizeTextStream() {
+    originalText = inputText.value.trim();
+    if (!originalText) {
+        showToast('Please enter text to humanize', 'error');
+        return;
+    }
+
+    // Set UI Loading State
+    humanizeBtn.disabled = true;
+    humanizeBtn.classList.add('loading');
+    if (streamProgressBar) streamProgressBar.style.display = 'block';
+    if (streamProgressFill) streamProgressFill.style.width = '5%';
+
+    // Clear output panes
+    outputText.innerHTML = '<p class="streaming-cursor">Initializing cross-model disruption stream...</p>';
+    if (stepsList) stepsList.innerHTML = '';
+
+    try {
+        const response = await fetch(`${API_BASE}/api/humanize/stream`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${sessionToken}`
+                'Authorization': sessionToken ? `Bearer ${sessionToken}` : ''
             },
             body: JSON.stringify({
-                text: text,
-                style: settings.style,
-                passes: settings.passes
+                text: originalText,
+                style: activeStyle,
+                passes: activePasses
             })
         });
 
-        const data = await response.json();
-
         if (response.status === 401) {
-            // Auth error
-            showToast('Authentication required. Please sign in.', 'error');
-            isAuthenticated = false;
-            updateAuthUI();
-            openSignIn();
+            const data = await response.json();
+            showToast(data.error || 'Authentication required', 'error');
+            openSignInModal();
+            resetLoadingState();
             return;
         }
 
-        if (data.success) {
-            // Clear placeholder and show text
-            outputText.innerHTML = '';
-            outputText.textContent = data.humanized;
-            updateOutputCounts(data.humanized);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
 
-            if (data.steps && data.steps.length > 0) {
-                displaySteps(data.steps);
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop(); // keep last unfinished line
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const event = JSON.parse(line.replace('data: ', '').trim());
+                        handleSSEEvent(event);
+                    } catch (e) {
+                        console.error('Error parsing SSE event line:', e);
+                    }
+                }
             }
-
-            showToast('Text humanized successfully!', 'success');
-        } else {
-            throw new Error(data.error || 'Humanization failed');
         }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast(error.message || 'Failed to humanize text', 'error');
-        updateApiStatus('Error', 'error');
+    } catch (err) {
+        console.error('Streaming error:', err);
+        showToast('Humanization failed or network error', 'error');
     } finally {
-        setLoading(false);
+        resetLoadingState();
     }
 }
 
-// ============================================
-// Clipboard Functions
-// ============================================
-async function pasteFromClipboard() {
-    try {
-        const text = await navigator.clipboard.readText();
-        inputText.value = text;
-        updateInputCounts();
-        showToast('Text pasted from clipboard', 'success');
-    } catch (error) {
-        showToast('Failed to paste from clipboard', 'error');
+function handleSSEEvent(ev) {
+    if (ev.type === 'init') {
+        renderAIScorecard(ev.pre_scores);
+    } else if (ev.type === 'step_start') {
+        if (streamProgressFill) streamProgressFill.style.width = `${ev.progress}%`;
+        addStepLog(ev.step, 'active');
+    } else if (ev.type === 'step_complete') {
+        if (ev.current_text) {
+            outputText.textContent = ev.current_text;
+            humanizedText = ev.current_text;
+            updateOutputStats(ev.current_text);
+        }
+        addStepLog(ev.step, 'complete');
+    } else if (ev.type === 'complete') {
+        if (streamProgressFill) streamProgressFill.style.width = '100%';
+        humanizedText = ev.humanized;
+        outputText.textContent = humanizedText;
+        updateOutputStats(humanizedText);
+        renderAIScorecard(ev.post_scores);
+        renderReadability(outputReadability, ev.post_readability);
+        buildDiffView(originalText, humanizedText);
+        showToast('Text Humanized Successfully!', 'success');
+    } else if (ev.type === 'error') {
+        showToast(ev.error || 'An error occurred during pipeline execution', 'error');
     }
 }
 
-function clearInput() {
-    inputText.value = '';
-    updateInputCounts();
-
-    // Reset output
-    outputText.innerHTML = `
-        <div class="placeholder-message">
-            <div class="placeholder-visual">
-                <span class="placeholder-icon">→</span>
-            </div>
-            <p>Humanized text appears here</p>
-        </div>
-    `;
-    updateOutputCounts('');
-    processingInfo.style.display = 'none';
+function resetLoadingState() {
+    humanizeBtn.disabled = false;
+    humanizeBtn.classList.remove('loading');
+    setTimeout(() => {
+        if (streamProgressBar) streamProgressBar.style.display = 'none';
+    }, 1000);
 }
 
-async function copyToClipboard() {
-    const text = outputText.textContent;
-
-    if (!text || text.includes('Humanized text appears here')) {
-        showToast('No text to copy', 'error');
-        return;
+function addStepLog(text, status) {
+    if (!stepsList) return;
+    let existing = Array.from(stepsList.children).find(li => li.getAttribute('data-step') === text);
+    if (!existing) {
+        existing = document.createElement('li');
+        existing.className = 'step-item';
+        existing.setAttribute('data-step', text);
+        stepsList.appendChild(existing);
     }
-
-    try {
-        await navigator.clipboard.writeText(text);
-        showToast('Copied to clipboard!', 'success');
-    } catch (error) {
-        showToast('Failed to copy to clipboard', 'error');
-    }
+    existing.className = `step-item ${status}`;
+    const icon = status === 'complete' ? '✓' : '⚡';
+    existing.innerHTML = `<span class="step-icon">${icon}</span> <span>${text}</span>`;
 }
 
-// ============================================
-// Event Listeners
-// ============================================
-inputText.addEventListener('input', updateInputCounts);
-humanizeBtn.addEventListener('click', humanize);
-pasteBtn.addEventListener('click', pasteFromClipboard);
-clearBtn.addEventListener('click', clearInput);
-copyBtn.addEventListener('click', copyToClipboard);
+function updateOutputStats(text) {
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    outputWordCount.textContent = words;
+    outputCharCount.textContent = text.length;
+}
 
-// Keyboard shortcut: Ctrl/Cmd + Enter to humanize
+if (humanizeBtn) humanizeBtn.addEventListener('click', humanizeTextStream);
+
+// Keyboard Shortcut Ctrl/Cmd + Enter
 inputText.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        humanize();
+        humanizeTextStream();
     }
 });
 
-// Initialize counts
-updateInputCounts();
+// ============================================
+// Myers Word-Level Diff Builder
+// ============================================
+function buildDiffView(oldStr, newStr) {
+    if (!diffText) return;
+
+    const oldWords = oldStr.split(/\s+/);
+    const newWords = newStr.split(/\s+/);
+
+    // Simple diff rendering using LCS / word comparison
+    const diffHtml = computeWordDiff(oldWords, newWords);
+    diffText.innerHTML = diffHtml;
+}
+
+function computeWordDiff(oldArr, newArr) {
+    let i = 0, j = 0;
+    let result = [];
+    while (i < oldArr.length || j < newArr.length) {
+        if (i < oldArr.length && j < newArr.length && oldArr[i] === newArr[j]) {
+            result.push(escapeHtml(oldArr[i]));
+            i++; j++;
+        } else if (j < newArr.length && (!oldArr[i] || !oldArr.includes(newArr[j]))) {
+            result.push(`<span class="diff-add">${escapeHtml(newArr[j])}</span>`);
+            j++;
+        } else if (i < oldArr.length) {
+            result.push(`<span class="diff-del">${escapeHtml(oldArr[i])}</span>`);
+            i++;
+        }
+    }
+    return result.join(' ');
+}
+
+function escapeHtml(str) {
+    return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+}
 
 // ============================================
-// API Health Check
+// Clipboard & File Exporters
 // ============================================
-async function checkApiHealth() {
-    try {
-        const response = await fetch(`${API_BASE}/api/health`);
-        if (response.ok) {
-            if (isAuthenticated) {
-                updateApiStatus('Ready', 'success');
-            }
-        } else {
-            updateApiStatus('Offline', 'error');
+if (pasteBtn) {
+    pasteBtn.addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            inputText.value = text;
+            updateInputStats();
+            showToast('Pasted text from clipboard', 'success');
+        } catch (err) {
+            showToast('Unable to read clipboard', 'error');
         }
-    } catch (error) {
-        updateApiStatus('Offline', 'error');
-        console.warn('API server not available');
+    });
+}
+
+if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+        inputText.value = '';
+        updateInputStats();
+        outputText.innerHTML = '<div class="placeholder-message"><p>Humanized text will stream here in real time...</p></div>';
+        if (diffText) diffText.innerHTML = '<div class="placeholder-message"><p>Run humanization to see word-level Diff comparison</p></div>';
+        showToast('Cleared workspace', 'info');
+    });
+}
+
+if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+        const text = outputText.textContent;
+        if (!text || text.includes('Humanized text will stream')) {
+            showToast('No text available to copy', 'error');
+            return;
+        }
+        await navigator.clipboard.writeText(text);
+        showToast('Copied humanized text to clipboard!', 'success');
+    });
+}
+
+if (downloadTxtBtn) {
+    downloadTxtBtn.addEventListener('click', () => {
+        const text = outputText.textContent;
+        if (!text || text.includes('Humanized text will stream')) {
+            showToast('No text available to download', 'error');
+            return;
+        }
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `humanized-text-${Date.now()}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Downloaded .txt file', 'success');
+    });
+}
+
+if (downloadDocxBtn) {
+    downloadDocxBtn.addEventListener('click', () => {
+        const text = outputText.textContent;
+        if (!text || text.includes('Humanized text will stream')) {
+            showToast('No text available to download', 'error');
+            return;
+        }
+        // Create formatted html blob with word doc mime type
+        const htmlDoc = `
+          <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+          <head><meta charset='utf-8'><title>Humanized Document</title>
+          <style>body { font-family: 'Calibri', sans-serif; font-size: 11pt; line-height: 1.5; color: #111; }</style>
+          </head>
+          <body>
+          <h2>Humanized Document</h2>
+          <p>${text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br/>')}</p>
+          </body></html>
+        `;
+        const blob = new Blob(['\ufeff' + htmlDoc], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `humanized-doc-${Date.now()}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Downloaded .docx document', 'success');
+    });
+}
+
+// ============================================
+// Clerk Authentication & Guest Modal
+// ============================================
+const authBtn = document.getElementById('auth-btn');
+const authOverlay = document.getElementById('auth-overlay');
+const authCta = document.getElementById('auth-cta');
+
+function openSignInModal() {
+    if (window.Clerk) {
+        window.Clerk.openSignIn();
+    } else if (authOverlay) {
+        authOverlay.style.display = 'flex';
     }
 }
 
-checkApiHealth();
+if (authBtn) authBtn.addEventListener('click', openSignInModal);
+if (authCta) authCta.addEventListener('click', openSignInModal);
 
-// ============================================
-// Floating Dock Animation
-// ============================================
-const floatingDock = document.getElementById('floating-dock');
-
-if (floatingDock) {
-    let lastScrollY = 0;
-
-    lenis.on('scroll', ({ scroll }) => {
-        if (scroll > lastScrollY && scroll > 100) {
-            floatingDock.style.transform = 'translateX(-50%) translateY(100px)';
-        } else {
-            floatingDock.style.transform = 'translateX(-50%) translateY(0)';
-        }
-        lastScrollY = scroll;
-    });
-}
-
-// ============================================
-// Textarea Focus State
-// ============================================
-if (inputText) {
-    inputText.addEventListener('focus', () => {
-        inputText.closest('.glass-card')?.classList.add('focused');
-    });
-
-    inputText.addEventListener('blur', () => {
-        inputText.closest('.glass-card')?.classList.remove('focused');
+if (authOverlay) {
+    authOverlay.addEventListener('click', (e) => {
+        if (e.target === authOverlay) authOverlay.style.display = 'none';
     });
 }

@@ -1,28 +1,32 @@
 """
-Text Humanizer API Server
-Flask backend with Clerk authentication and OpenRouter AI.
+Text Humanizer API Server - Modern EventStream Architecture
+Flask backend with Clerk authentication, guest mode, and OpenRouter AI pipeline.
 
-Pipeline per pass (all via OpenRouter — no other API keys needed):
-  A. Triple-hop translation  EN->ES->FR->EN  [Llama 4 Maverick]
-  B. NLP transforms          cliches, spellings, clause flips, homoglyphs
-  C. Perplexity boost        vocabulary disruption  [DeepSeek V3]
-  D. Structural burstiness   sentence-length variance  [DeepSeek V3]
-  E. Humanity injection      parentheticals, hedging  [DeepSeek V3]
-  F. Naturalness smoother    fix stiff/archaic words  [DeepSeek V3]
-
-Two different model families (Llama + DeepSeek) through one OpenRouter key
-preserves cross-model fingerprint mixing without multiple API providers.
+Endpoints:
+  - POST /api/analyze         Fast AI detection analysis & signal scanner
+  - POST /api/humanize        REST humanization pipeline with metric scores
+  - POST /api/humanize/stream Server-Sent Events (SSE) streaming humanization
+  - GET  /api/health          Health status
 """
 
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
+import json
+import time
 from functools import wraps
 import os
 import jwt
 import requests
+from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
+from flask_cors import CORS
 from dotenv import load_dotenv
 
-from humanizer import humanize_text, humanize_text_academic, remove_ai_cliches
+from humanizer import (
+    humanize_text,
+    humanize_text_academic,
+    remove_ai_cliches,
+    calculate_ai_score,
+    calculate_readability,
+    scan_ai_signals,
+)
 from openrouter_client import (
     triple_translation,
     perplexity_boost,
@@ -89,24 +93,41 @@ def verify_clerk_token(token):
             options={'verify_aud': False}
         )
         return payload
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
+    except Exception:
         return None
 
 
-def require_auth(f):
+def require_auth_or_guest(f):
+    """Allow full access to authenticated users, or guest mode up to 300 words."""
     @wraps(f)
     def decorated(*args, **kwargs):
         auth_header = request.headers.get('Authorization', '')
-        if not auth_header.startswith('Bearer '):
-            return jsonify({'success': False, 'error': 'Authentication required', 'code': 'AUTH_REQUIRED'}), 401
-        token = auth_header.replace('Bearer ', '')
-        payload = verify_clerk_token(token)
-        if not payload:
-            return jsonify({'success': False, 'error': 'Invalid or expired token', 'code': 'INVALID_TOKEN'}), 401
-        request.user_id = payload.get('sub')
+        is_authenticated = False
+        user_id = None
+
+        if auth_header.startswith('Bearer '):
+            token = auth_header.replace('Bearer ', '')
+            payload = verify_clerk_token(token)
+            if payload:
+                is_authenticated = True
+                user_id = payload.get('sub')
+
+        data = request.get_json(silent=True) or {}
+        text = data.get('text', '')
+        word_count = len(text.split())
+
+        # If not authenticated, check guest word limit (300 words max)
+        if not is_authenticated and word_count > 300:
+            return jsonify({
+                'success': False,
+                'error': 'Guest limit exceeded (300 words max). Please sign in to humanize longer documents.',
+                'code': 'GUEST_LIMIT_EXCEEDED'
+            }), 401
+
+        request.user_id = user_id
+        request.is_authenticated = is_authenticated
         return f(*args, **kwargs)
+
     return decorated
 
 
@@ -120,73 +141,205 @@ def serve_static(filename):
     return send_from_directory('.', filename)
 
 
-@app.route('/api/humanize', methods=['POST'])
-@require_auth
-def humanize():
+@app.route('/api/analyze', methods=['POST'])
+def analyze_text():
+    """Fast on-demand AI detection analysis & signal scanning endpoint."""
     try:
-        data = request.get_json()
-        if not data or 'text' not in data:
+        data = request.get_json() or {}
+        text = data.get('text', '').strip()
+        if not text:
             return jsonify({'error': 'No text provided'}), 400
 
-        text = data['text'].strip()
+        ai_metrics = calculate_ai_score(text)
+        readability = calculate_readability(text)
+        signals = scan_ai_signals(text)
+
+        return jsonify({
+            'success': True,
+            'word_count': readability['word_count'],
+            'ai_score': ai_metrics,
+            'readability': readability,
+            'signals': signals
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/humanize', methods=['POST'])
+@require_auth_or_guest
+def humanize():
+    """Standard REST endpoint for humanization."""
+    try:
+        data = request.get_json() or {}
+        text = data.get('text', '').strip()
         if not text:
             return jsonify({'error': 'Text cannot be empty'}), 400
 
-        style  = data.get('style', 'academic')
+        style = data.get('style', 'academic')
         passes = max(1, min(5, int(data.get('passes', 2))))
 
-        academic_opts = {'vary_length': True, 'contractions': False, 'informal': False, 'casual_starters': False}
-        casual_opts   = {'vary_length': True, 'contractions': True,  'informal': True,  'informal_rate': 0.15, 'casual_starters': True}
+        pre_scores = calculate_ai_score(text)
+        pre_readability = calculate_readability(text)
 
-        nlp_opts = academic_opts if style == 'academic' else casual_opts
-        nlp_fn   = humanize_text_academic if style == 'academic' else humanize_text
+        nlp_opts = {'vary_length': True, 'contractions': style in ['casual', 'executive']}
+        nlp_fn = humanize_text_academic if style in ['academic', 'executive'] else humanize_text
 
         result = text
-        steps  = []
+        steps = []
 
         result = remove_ai_cliches(result)
-        steps.append('AI Cliche Removal (NLP)')
+        steps.append('AI Signature Removal (NLP)')
 
         for i in range(passes):
             n = i + 1
-
             result = triple_translation(result)
-            steps.append(f'Pass {n}/{passes} - Translation EN->ES->FR->EN (Llama 4 Maverick)')
+            steps.append(f'Pass {n}/{passes} - Triple Translation EN->ES->FR->EN')
 
             result = nlp_fn(result, nlp_opts)
-            steps.append(f'Pass {n}/{passes} - NLP: Spellings, Clause Flips, Homoglyphs')
+            steps.append(f'Pass {n}/{passes} - NLP Clause Restructuring & Spelling Mix')
 
-            result = perplexity_boost(result)
-            steps.append(f'Pass {n}/{passes} - Perplexity Boost (DeepSeek V3)')
+            result = perplexity_boost(result, style=style)
+            steps.append(f'Pass {n}/{passes} - Perplexity Boost ({style.replace("_", " ").title()} Mode)')
 
             result = structural_restructure(result)
-            steps.append(f'Pass {n}/{passes} - Structural Burstiness (DeepSeek V3)')
+            steps.append(f'Pass {n}/{passes} - Sentence Burstiness Disruption')
 
-            result = humanity_injection(result, style)
-            steps.append(f'Pass {n}/{passes} - Humanity Injection (DeepSeek V3)')
+            result = humanity_injection(result, style=style)
+            steps.append(f'Pass {n}/{passes} - Humanity Quirks & Parentheticals Injection')
 
             result = naturalness_smoother(result)
-            steps.append(f'Pass {n}/{passes} - Naturalness Smoother (DeepSeek V3)')
+            steps.append(f'Pass {n}/{passes} - Naturalness Smoother')
 
         result = format_only(result)
-        steps.append('Final - Spacing & Punctuation Fix')
+        steps.append('Final - Spacing & Punctuation Polish')
+
+        post_scores = calculate_ai_score(result)
+        post_readability = calculate_readability(result)
 
         return jsonify({
-            'success':   True,
-            'original':  text,
+            'success': True,
+            'original': text,
             'humanized': result,
-            'style':     style,
-            'passes':    passes,
-            'steps':     steps,
+            'style': style,
+            'passes': passes,
+            'steps': steps,
+            'pre_scores': pre_scores,
+            'post_scores': post_scores,
+            'pre_readability': pre_readability,
+            'post_readability': post_readability,
         })
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/humanize/stream', methods=['POST'])
+@require_auth_or_guest
+def humanize_stream():
+    """Server-Sent Events (SSE) streaming humanization endpoint."""
+    data = request.get_json() or {}
+    text = data.get('text', '').strip()
+    if not text:
+        return jsonify({'error': 'Text cannot be empty'}), 400
+
+    style = data.get('style', 'academic')
+    passes = max(1, min(5, int(data.get('passes', 2))))
+
+    def generate_events():
+        try:
+            pre_scores = calculate_ai_score(text)
+            pre_readability = calculate_readability(text)
+
+            yield f"data: {json.dumps({'type': 'init', 'pre_scores': pre_scores, 'pre_readability': pre_readability})}\n\n"
+
+            nlp_opts = {'vary_length': True, 'contractions': style in ['casual', 'executive']}
+            nlp_fn = humanize_text_academic if style in ['academic', 'executive'] else humanize_text
+
+            result = text
+            total_steps = 1 + (passes * 6) + 1
+            current_step = 0
+
+            # Step 0: Cliche Removal
+            current_step += 1
+            msg = 'AI Signature & Buzzword Removal'
+            progress = int((current_step / total_steps) * 100)
+            yield f"data: {json.dumps({'type': 'step_start', 'step': msg, 'progress': progress})}\n\n"
+            result = remove_ai_cliches(result)
+            yield f"data: {json.dumps({'type': 'step_complete', 'step': msg, 'current_text': result})}\n\n"
+
+            for i in range(passes):
+                n = i + 1
+
+                # 1. Translation
+                current_step += 1
+                msg = f'Pass {n}/{passes} - Cross-Model Translation (EN->ES->FR->EN)'
+                progress = int((current_step / total_steps) * 100)
+                yield f"data: {json.dumps({'type': 'step_start', 'step': msg, 'progress': progress})}\n\n"
+                result = triple_translation(result)
+                yield f"data: {json.dumps({'type': 'step_complete', 'step': msg, 'current_text': result})}\n\n"
+
+                # 2. NLP
+                current_step += 1
+                msg = f'Pass {n}/{passes} - Clause Flips & Spelling Variance'
+                progress = int((current_step / total_steps) * 100)
+                yield f"data: {json.dumps({'type': 'step_start', 'step': msg, 'progress': progress})}\n\n"
+                result = nlp_fn(result, nlp_opts)
+                yield f"data: {json.dumps({'type': 'step_complete', 'step': msg, 'current_text': result})}\n\n"
+
+                # 3. Perplexity
+                current_step += 1
+                msg = f'Pass {n}/{passes} - Perplexity Boost ({style.replace("_", " ").title()} Mode)'
+                progress = int((current_step / total_steps) * 100)
+                yield f"data: {json.dumps({'type': 'step_start', 'step': msg, 'progress': progress})}\n\n"
+                result = perplexity_boost(result, style=style)
+                yield f"data: {json.dumps({'type': 'step_complete', 'step': msg, 'current_text': result})}\n\n"
+
+                # 4. Burstiness
+                current_step += 1
+                msg = f'Pass {n}/{passes} - Sentence Burstiness Disruption'
+                progress = int((current_step / total_steps) * 100)
+                yield f"data: {json.dumps({'type': 'step_start', 'step': msg, 'progress': progress})}\n\n"
+                result = structural_restructure(result)
+                yield f"data: {json.dumps({'type': 'step_complete', 'step': msg, 'current_text': result})}\n\n"
+
+                # 5. Humanity
+                current_step += 1
+                msg = f'Pass {n}/{passes} - Authentic Humanity Quirks Injection'
+                progress = int((current_step / total_steps) * 100)
+                yield f"data: {json.dumps({'type': 'step_start', 'step': msg, 'progress': progress})}\n\n"
+                result = humanity_injection(result, style=style)
+                yield f"data: {json.dumps({'type': 'step_complete', 'step': msg, 'current_text': result})}\n\n"
+
+                # 6. Naturalness
+                current_step += 1
+                msg = f'Pass {n}/{passes} - Naturalness Smoother'
+                progress = int((current_step / total_steps) * 100)
+                yield f"data: {json.dumps({'type': 'step_start', 'step': msg, 'progress': progress})}\n\n"
+                result = naturalness_smoother(result)
+                yield f"data: {json.dumps({'type': 'step_complete', 'step': msg, 'current_text': result})}\n\n"
+
+            # Final Format
+            current_step += 1
+            msg = 'Final Formatting & Punctuation Polish'
+            progress = 100
+            yield f"data: {json.dumps({'type': 'step_start', 'step': msg, 'progress': progress})}\n\n"
+            result = format_only(result)
+            yield f"data: {json.dumps({'type': 'step_complete', 'step': msg, 'current_text': result})}\n\n"
+
+            post_scores = calculate_ai_score(result)
+            post_readability = calculate_readability(result)
+
+            yield f"data: {json.dumps({'type': 'complete', 'humanized': result, 'post_scores': post_scores, 'post_readability': post_readability})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+
+    return Response(stream_with_context(generate_events()), mimetype='text/event-stream')
+
+
 @app.route('/api/health', methods=['GET'])
 def health():
-    return jsonify({'status': 'ok', 'service': 'Text Humanizer API'})
+    return jsonify({'status': 'ok', 'service': 'Text Humanizer Stream Engine'})
 
 
 @app.route('/api/auth/check', methods=['GET'])
@@ -202,6 +355,6 @@ def auth_check():
 
 
 if __name__ == '__main__':
-    print("Starting Text Humanizer Server...")
+    print("Starting Text Humanizer Modern Server...")
     print("Open http://localhost:5000 in your browser")
     app.run(debug=True, port=5000)

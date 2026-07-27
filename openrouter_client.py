@@ -299,28 +299,43 @@ def structural_restructure(text: str) -> str:
     return result if result else text
 
 
-def perplexity_boost(text: str) -> str:
-    """Replace predictable words with natural but less-expected alternatives."""
+def perplexity_boost(text: str, style: str = "academic") -> str:
+    """Replace predictable words with natural but less-expected alternatives according to selected tone style."""
+    tone_instructions = {
+        "academic": "Maintain formal scholarly vocabulary while avoiding AI cliché transitions. Swap predictable verbs and adverbs for nuanced academic alternatives.",
+        "executive": "Use concise, high-impact professional vocabulary. Avoid passive fluff, corporate jargon, and overused AI buzzwords.",
+        "casual": "Use natural everyday conversational words. Feel free to use simple, direct phrasing.",
+        "creative": "Use vivid, expressive, and imaginative vocabulary choices with varied cadence.",
+        "bypass_hardcore": "Maximal vocabulary disruption. Aggressively replace statistical top n-gram choices with rare but completely valid natural alternatives to lower AI detector confidence to zero."
+    }
+    instruction = tone_instructions.get(style, tone_instructions["academic"])
+
     result = _call(
-        INTELLIGENCE_MODELS, PERPLEXITY_BOOST_PROMPT,
+        INTELLIGENCE_MODELS, PERPLEXITY_BOOST_PROMPT + f"\n\nTONE SPECIFIC INSTRUCTION:\n{instruction}",
         f"Boost perplexity of this text:\n\n{text}",
-        temperature=0.72, max_tokens=_tokens_for(text, factor=1.6), label="perplexity_boost",
+        temperature=0.75 if style == "bypass_hardcore" else 0.72,
+        max_tokens=_tokens_for(text, factor=1.6), label="perplexity_boost",
     )
     return result if result else text
 
 
 def humanity_injection(text: str, style: str = "academic") -> str:
-    """Inject parentheticals, hedging, self-corrections, punchy fragments."""
-    style_note = (
-        "ACADEMIC mode: Do NOT use casual connectives (pattern 5). Focus on parentheticals, hedging, self-correction."
-        if style == "academic" else
-        "CASUAL mode: Use all pattern types including casual connectives."
-    )
+    """Inject parentheticals, hedging, self-corrections, punchy fragments according to selected tone preset."""
+    style_guidance = {
+        "academic": "ACADEMIC mode: Avoid casual connectives. Focus on parentheticals, hedged claims, and subtle self-correction.",
+        "executive": "EXECUTIVE mode: Focus on punchy short sentences after long analytical points, direct parenthetical clarifications, and active assertion.",
+        "casual": "CASUAL mode: Use all pattern types including casual connectives (And yet..., Look,), contractions, and conversational digressions.",
+        "creative": "CREATIVE mode: Emphasize vivid parenthetical observations, rhythmic sentence fragments, and unexpected stylistic pauses.",
+        "bypass_hardcore": "BYPASS HARDCORE mode: Inject maximum structural variance: sudden 3-word punchy sentences, parentheticals, em-dashes, and asymmetric clause breaks."
+    }
+    style_note = style_guidance.get(style, style_guidance["academic"])
+
     result = _call(
         INTELLIGENCE_MODELS,
-        HUMANITY_INJECTION_PROMPT + f"\n\nStyle: {style_note}",
+        HUMANITY_INJECTION_PROMPT + f"\n\nStyle Guidance: {style_note}",
         f"Inject human writing patterns:\n\n{text}",
-        temperature=0.75, max_tokens=_tokens_for(text, factor=1.6), label="humanity_injection",
+        temperature=0.8 if style in ["creative", "bypass_hardcore"] else 0.75,
+        max_tokens=_tokens_for(text, factor=1.6), label="humanity_injection",
     )
     return result if result else text
 

@@ -5,14 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="Transform AI-generated text into natural, human-written content using advanced NLP and AI techniques.">
-    <title>Text Humanizer | Transform AI Text to Human Writing</title>
+        content="Transform AI-generated text into natural, human-written content using advanced multi-model AI and NLP disruption techniques.">
+    <title>AI Text Humanizer | Modern AI Bypass Workstation</title>
 
-    <!-- Premium Fonts: Syne for headings, Outfit for body -->
+    <!-- Premium Fonts: Syne for display, Outfit for body -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap"
         rel="stylesheet">
 
     <!-- Lenis Smooth Scroll -->
@@ -23,7 +23,7 @@
         data-clerk-publishable-key="pk_test_dmFzdC1jYXRmaXNoLTE2LmNsZXJrLmFjY291bnRzLmRldiQ"
         src="https://vast-catfish-16.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
         type="text/javascript">
-        </script>
+    </script>
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -36,7 +36,7 @@
     <!-- Film Grain Overlay -->
     <div class="grain-overlay"></div>
 
-    <!-- Background Effects -->
+    <!-- Background Glow Orbs -->
     <div class="background-effects">
         <div class="gradient-orb orb-1"></div>
         <div class="gradient-orb orb-2"></div>
@@ -48,96 +48,172 @@
     <div class="page-loader" id="page-loader">
         <div class="loader-content">
             <div class="loader-bar"></div>
-            <span class="loader-text">Loading experience...</span>
+            <span class="loader-text">Initializing AI Humanizer Workstation...</span>
         </div>
     </div>
 
     <div class="container">
-        <!-- Hero Section with Split Layout -->
+        <!-- Header Section -->
         <header class="header reveal-element">
             <div class="header-content">
                 <div class="header-badge">
                     <span class="badge-dot"></span>
-                    <span>AI to Human</span>
+                    <span>Cross-Model AI Disruption Engine</span>
                 </div>
                 <h1 class="hero-title reveal-text">
-                    <span class="title-word">Text</span>
+                    <span class="title-word">AI</span>
                     <span class="title-dot"></span>
                     <span class="title-word title-accent">Humanizer</span>
                 </h1>
-                <p class="hero-subtitle reveal-text">Transform mechanical AI text into authentic, natural human writing
+                <p class="hero-subtitle reveal-text">
+                    Transform robotic AI text into authentic, natural human writing. Bypass GPTZero, Turnitin & CopyLeaks with real-time detection scoring.
                 </p>
             </div>
         </header>
 
-        <!-- Bento Grid Layout -->
+        <!-- Presets & Controls Bar -->
+        <section class="preset-toolbar glass-card reveal-element">
+            <div class="preset-group">
+                <span class="preset-label">Writing Mode</span>
+                <div class="preset-pills">
+                    <button class="preset-pill active" data-style="academic">
+                        <span class="pill-icon">🎓</span> Academic & Research
+                    </button>
+                    <button class="preset-pill" data-style="executive">
+                        <span class="pill-icon">💼</span> Executive & Business
+                    </button>
+                    <button class="preset-pill" data-style="casual">
+                        <span class="pill-icon">💬</span> Conversational
+                    </button>
+                    <button class="preset-pill" data-style="creative">
+                        <span class="pill-icon">🎨</span> Creative & Story
+                    </button>
+                    <button class="preset-pill pill-bypass" data-style="bypass_hardcore">
+                        <span class="pill-icon">🛡️</span> Anti-AI Bypass Hardcore
+                    </button>
+                </div>
+            </div>
+
+            <div class="pass-group">
+                <span class="preset-label">Disruption Passes: <strong id="passes-val">2</strong></span>
+                <input type="range" id="passes-slider" min="1" max="5" value="2" class="intensity-slider">
+            </div>
+        </section>
+
+        <!-- Main Bento Grid Layout -->
         <main class="bento-grid">
-            <!-- Input Panel - Large -->
+
+            <!-- 1. Input Panel -->
             <div class="bento-item bento-input glass-card reveal-element">
                 <div class="panel-header">
                     <div class="panel-label">
                         <span class="label-icon">01</span>
-                        <span>Input</span>
+                        <span>Input AI Text</span>
                     </div>
                     <div class="panel-actions">
-                        <button class="action-btn magnetic-btn" id="paste-btn" data-tooltip="Paste">
+                        <button class="action-btn scan-btn magnetic-btn" id="scan-btn" data-tooltip="Scan AI Watermarks">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M2 12h20M12 2v20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93" />
+                            </svg>
+                            <span>Scan AI Signals</span>
+                        </button>
+                        <button class="action-btn magnetic-btn" id="paste-btn" data-tooltip="Paste Text">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
                                 <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
                             </svg>
                         </button>
-                        <button class="action-btn magnetic-btn" id="clear-btn" data-tooltip="Clear">
+                        <button class="action-btn magnetic-btn" id="clear-btn" data-tooltip="Clear Text">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path
-                                    d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             </svg>
                         </button>
                     </div>
                 </div>
-                <textarea id="input-text" placeholder="Paste your AI-generated text here..."></textarea>
+
+                <div class="editor-wrapper">
+                    <div class="highlight-overlay" id="input-highlight"></div>
+                    <textarea id="input-text" placeholder="Paste your ChatGPT, Claude, DeepSeek, or Gemini text here to scan and humanize..."></textarea>
+                </div>
+
                 <div class="panel-footer">
-                    <span class="stat"><span id="input-word-count">0</span> words</span>
-                    <span class="stat-divider">·</span>
-                    <span class="stat"><span id="input-char-count">0</span> chars</span>
+                    <div class="stat-group">
+                        <span class="stat"><strong id="input-word-count">0</strong> words</span>
+                        <span class="stat-divider">·</span>
+                        <span class="stat"><strong id="input-char-count">0</strong> chars</span>
+                    </div>
+                    <div class="readability-badge" id="input-readability">
+                        <span>Readability: --</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Output Panel - Large -->
-            <div class="bento-item bento-output glass-card reveal-element">
+            <!-- 2. AI Detection Radar Scorecard -->
+            <div class="bento-item bento-radar glass-card reveal-element">
                 <div class="panel-header">
                     <div class="panel-label">
-                        <span class="label-icon">02</span>
-                        <span>Output</span>
-                    </div>
-                    <div class="panel-actions">
-                        <button class="action-btn magnetic-btn" id="copy-btn" data-tooltip="Copy">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                            </svg>
-                        </button>
+                        <span class="label-icon">📊</span>
+                        <span>AI Detection Scorecard</span>
                     </div>
                 </div>
-                <div class="output-content" id="output-text">
-                    <div class="placeholder-message">
-                        <div class="placeholder-visual">
-                            <span class="placeholder-icon">→</span>
+
+                <div class="radar-content">
+                    <!-- Gauge Meter -->
+                    <div class="gauge-container">
+                        <svg class="gauge-svg" viewBox="0 0 120 120">
+                            <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+                            <circle class="gauge-fill" id="gauge-fill" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="314"></circle>
+                        </svg>
+                        <div class="gauge-center">
+                            <span class="gauge-val" id="ai-score-val">0%</span>
+                            <span class="gauge-label" id="ai-score-label">AI Score</span>
                         </div>
-                        <p>Humanized text appears here</p>
                     </div>
-                </div>
-                <div class="panel-footer">
-                    <span class="stat"><span id="output-word-count">0</span> words</span>
-                    <span class="stat-divider">·</span>
-                    <span class="stat"><span id="output-char-count">0</span> chars</span>
+
+                    <div class="detector-breakdown">
+                        <div class="detector-row">
+                            <span class="det-name">GPTZero</span>
+                            <div class="det-bar"><div class="det-fill" id="det-gptzero" style="width: 0%;"></div></div>
+                            <span class="det-val" id="det-val-gptzero">--</span>
+                        </div>
+                        <div class="detector-row">
+                            <span class="det-name">Turnitin</span>
+                            <div class="det-bar"><div class="det-fill" id="det-turnitin" style="width: 0%;"></div></div>
+                            <span class="det-val" id="det-val-turnitin">--</span>
+                        </div>
+                        <div class="detector-row">
+                            <span class="det-name">CopyLeaks</span>
+                            <div class="det-bar"><div class="det-fill" id="det-copyleaks" style="width: 0%;"></div></div>
+                            <span class="det-val" id="det-val-copyleaks">--</span>
+                        </div>
+                        <div class="detector-row">
+                            <span class="det-name">ZeroGPT</span>
+                            <div class="det-bar"><div class="det-fill" id="det-zerogpt" style="width: 0%;"></div></div>
+                            <span class="det-val" id="det-val-zerogpt">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Metric Indicators -->
+                    <div class="metric-gauges">
+                        <div class="metric-card">
+                            <span class="metric-title">Burstiness</span>
+                            <span class="metric-val" id="metric-burstiness">--</span>
+                            <span class="metric-sub">Sentence Variety</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-title">Perplexity</span>
+                            <span class="metric-val" id="metric-perplexity">--</span>
+                            <span class="metric-sub">Vocab Surprise</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- CTA Button - Center -->
+            <!-- 3. CTA Humanize Button -->
             <div class="bento-item bento-cta reveal-element">
                 <button class="humanize-btn magnetic-btn" id="humanize-btn">
                     <span class="btn-content">
-                        <span class="btn-text">Humanize</span>
+                        <span class="btn-text">Humanize Text</span>
                         <span class="btn-arrow">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -151,60 +227,92 @@
                 </button>
             </div>
 
-            <!-- Settings Panel - Compact -->
-            <div class="bento-item bento-settings glass-card reveal-element">
+            <!-- 4. Output & Diff Viewer Panel -->
+            <div class="bento-item bento-output glass-card reveal-element">
                 <div class="panel-header">
-                    <div class="panel-label">
-                        <span class="label-icon">⚙</span>
-                        <span>Config</span>
+                    <div class="output-tabs">
+                        <button class="tab-btn active" data-tab="humanized">
+                            <span class="tab-icon">✨</span> Humanized Text
+                        </button>
+                        <button class="tab-btn" data-tab="diff">
+                            <span class="tab-icon">🔍</span> Diff Viewer
+                        </button>
+                        <button class="tab-btn" data-tab="logs">
+                            <span class="tab-icon">⚡</span> Pipeline Logs
+                        </button>
+                    </div>
+
+                    <div class="panel-actions">
+                        <button class="action-btn magnetic-btn" id="copy-btn" data-tooltip="Copy Humanized Text">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                            </svg>
+                        </button>
+                        <button class="action-btn magnetic-btn" id="download-docx-btn" data-tooltip="Download .docx Document">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="12" y1="18" x2="12" y2="12" />
+                                <polyline points="9 15 12 18 15 15" />
+                            </svg>
+                        </button>
+                        <button class="action-btn magnetic-btn" id="download-txt-btn" data-tooltip="Download .txt Plain File">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
-                <div class="settings-content">
-                    <div class="setting-group">
-                        <label class="setting-label">Writing Style</label>
-                        <div class="mode-tabs">
-                            <label class="mode-tab">
-                                <input type="radio" name="style" value="academic" checked>
-                                <span>Academic</span>
-                            </label>
-                            <label class="mode-tab">
-                                <input type="radio" name="style" value="casual">
-                                <span>Casual</span>
-                            </label>
-                        </div>
-                    </div>
+                <!-- Streaming Progress Indicator -->
+                <div class="stream-progress-bar" id="stream-progress-bar" style="display: none;">
+                    <div class="stream-progress-fill" id="stream-progress-fill" style="width: 0%;"></div>
+                </div>
 
-
-
-                    <div class="setting-group">
-                        <label class="setting-label">Repetition</label>
-                        <div class="intensity-track">
-                            <input type="range" id="passes" min="1" max="5" value="2" class="intensity-slider">
-                            <div class="intensity-markers" style="justify-content: space-between;">
-                                <span>1</span>
-                                <span>2</span>
-                                <span>3</span>
-                                <span>4</span>
-                                <span>5</span>
+                <!-- Tab Panes -->
+                <div class="tab-pane active" id="tab-humanized">
+                    <div class="output-content" id="output-text">
+                        <div class="placeholder-message">
+                            <div class="placeholder-visual">
+                                <span class="placeholder-icon">→</span>
                             </div>
+                            <p>Humanized text will stream here in real time...</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="processing-info" id="processing-info" style="display: none;">
-                    <div class="processing-header">Steps Applied</div>
-                    <ul id="steps-list"></ul>
+                <div class="tab-pane" id="tab-diff" style="display: none;">
+                    <div class="diff-content" id="diff-text">
+                        <div class="placeholder-message">
+                            <p>Run humanization to see word-level Diff comparison</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane" id="tab-logs" style="display: none;">
+                    <div class="logs-content">
+                        <div class="processing-header">Multi-Pass Event Stream</div>
+                        <ul id="steps-list" class="steps-list">
+                            <li class="empty-step">Waiting for execution...</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="panel-footer">
+                    <div class="stat-group">
+                        <span class="stat"><strong id="output-word-count">0</strong> words</span>
+                        <span class="stat-divider">·</span>
+                        <span class="stat"><strong id="output-char-count">0</strong> chars</span>
+                    </div>
+                    <div class="readability-badge" id="output-readability">
+                        <span>Readability: --</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Stats Panel - Small -->
-            <div class="bento-item bento-stats glass-card reveal-element">
-                <div class="stat-display">
-                    <span class="stat-label">Powered by</span>
-                    <span class="stat-value">Cerebras AI</span>
-                </div>
-            </div>
         </main>
 
         <!-- Floating Dock Navigation -->
@@ -238,15 +346,15 @@
         </nav>
     </div>
 
-    <!-- Auth Required Overlay -->
+    <!-- Auth Required Modal Overlay -->
     <div class="auth-overlay" id="auth-overlay">
         <div class="auth-modal glass-card">
             <div class="auth-modal-content">
                 <div class="auth-icon-large">🔐</div>
                 <h2>Sign In Required</h2>
-                <p>Please sign in to use the Text Humanizer</p>
+                <p>Sign in to unlock unlimited word length and custom model presets.</p>
                 <button class="auth-cta magnetic-btn" id="auth-cta">
-                    <span>Sign In to Continue</span>
+                    <span>Sign In with Clerk</span>
                 </button>
             </div>
         </div>

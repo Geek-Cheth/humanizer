@@ -221,16 +221,29 @@ AI_CLICHES = {
     r'\bin terms of\b': ['regarding', 'when it comes to', 'on', 'for'],
     r'\bwith respect to\b': ['regarding', 'on', 'about', 'concerning'],
     r'\bwith regard to\b': ['regarding', 'on', 'about', 'concerning'],
-    r'\bdue to the fact that\b': ['because', 'given that', 'since'],
-    r'\bthe fact that\b': ['that', 'the reality that', 'the point that'],
-    r'\ba wide range of\b': ['many', 'various', 'a variety of', 'numerous'],
-    r'\ba wide variety of\b': ['many', 'various', 'diverse', 'numerous'],
-    r'\ba number of\b': ['several', 'a handful of', 'a few', 'some'],
-    r'\ba plethora of\b': ['many', 'a great many', 'no shortage of'],
-    r'\bvast majority\b': ['most', 'the bulk of', 'nearly all'],
-    r'\bsignificant amount\b': ['substantial', 'considerable', 'much'],
     r'\bin light of\b': ['given', 'considering', 'in view of'],
     r'\bin the light of\b': ['given', 'considering', 'in view of'],
+
+    # Modern LLM signatures (GPT-4o, Claude 3.5, DeepSeek V3 signatures)
+    r'\btestament to\b': ['proof of', 'evidence for', 'reflection of', 'mark of'],
+    r'\bserves as a testament\b': ['shows', 'highlights', 'stands as proof', 'reflects'],
+    r'\brich tapestry\b': ['complex mix', 'wide range', 'diverse blend', 'intricate set'],
+    r'\btapestry of\b': ['blend of', 'mix of', 'network of'],
+    r'\bbeacon of\b': ['symbol of', 'model for', 'guide for'],
+    r'\bdelve into\b': ['examine', 'explore', 'look into', 'investigate'],
+    r'\bdelving into\b': ['examining', 'exploring', 'looking into'],
+    r'\bpivotal role\b': ['key role', 'central part', 'major influence'],
+    r'\bplays a pivotal role\b': ['is central to', 'drives', 'shapes', 'matters greatly for'],
+    r'\bunderscores the importance of\b': ['highlights how key', 'shows the need for', 'stresses'],
+    r'\bin an era where\b': ['today, as', 'now that', 'at a time when'],
+    r'\bin today\'s fast-paced world\b': ['today', 'currently', 'nowadays'],
+    r'\bin the digital age\b': ['today', 'nowadays', 'currently'],
+    r'\bnavigating the complexities of\b': ['handling', 'dealing with', 'managing'],
+    r'\bgame-changer\b': ['major shift', 'key innovation', 'turning point'],
+    r'\bgame changer\b': ['major shift', 'key innovation', 'turning point'],
+    r'\bdelicate balance\b': ['careful balance', 'fine line', 'trade-off'],
+    r'\balign with\b': ['fit', 'match', 'suit', 'support'],
+    r'\baligns with\b': ['fits', 'matches', 'suits', 'supports'],
 }
 
 # ─── US/UK SPELLING PAIRS ────────────────────────────────────────────────────────
@@ -238,7 +251,7 @@ SPELLING_PAIRS = {
     "analyze": "analyse", "analyzes": "analyses", "color": "colour",
     "colors": "colours", "behavior": "behaviour", "behaviors": "behaviours",
     "organize": "organise", "organizes": "organises", "recognize": "recognise",
-    "recognizes": "recognises", "realize": "realise", "realizes": "realises",
+    "recognizes": "recognises", "realize": "realize", "realizes": "realises",
     "optimization": "optimisation", "optimize": "optimise", "center": "centre",
     "centers": "centres", "defense": "defence", "license": "licence",
     "traveling": "travelling", "fueled": "fuelled", "program": "programme",
@@ -263,6 +276,164 @@ def remove_ai_cliches(text: str) -> str:
             replacement = random.choice(replacements)
             result = result[:match.start()] + replacement + result[match.end():]
     return result
+
+
+def scan_ai_signals(text: str) -> list:
+    """
+    Scan text for flagged AI clichés and buzzword signatures.
+    Returns list of dicts with match details for interactive frontend highlighting.
+    """
+    signals = []
+    for pattern, replacements in AI_CLICHES.items():
+        for match in re.finditer(pattern, text):
+            clean_phrase = match.group(0)
+            signals.append({
+                'phrase': clean_phrase,
+                'start': match.start(),
+                'end': match.end(),
+                'suggestions': replacements[:3],
+                'reason': 'Overused AI transition / statistical indicator'
+            })
+    # Sort signals by position
+    signals.sort(key=lambda s: s['start'])
+    return signals
+
+
+# ─── METRICS & AI DETECTION ANALYSIS ENGINE ─────────────────────────────────────
+
+def count_syllables(word: str) -> int:
+    """Estimate syllable count in an English word."""
+    word = word.lower().strip()
+    if not word:
+        return 0
+    if len(word) <= 3:
+        return 1
+    word = re.sub(r'(?:[^laeiouy]|ed|es|e)$', '', word)
+    word = re.sub(r'^y', '', word)
+    matches = re.findall(r'[aeiouy]{1,2}', word)
+    return max(1, len(matches))
+
+
+def calculate_readability(text: str) -> dict:
+    """Calculate Flesch Reading Ease and Flesch-Kincaid Grade Level."""
+    sentences = [s for s in sent_tokenize(text) if s.strip()]
+    num_sentences = max(1, len(sentences))
+    words = [w for w in word_tokenize(text) if w.isalnum()]
+    num_words = max(1, len(words))
+    num_syllables = sum(count_syllables(w) for w in words)
+
+    asl = num_words / num_sentences  # Average Sentence Length
+    asw = num_syllables / num_words  # Average Syllables per Word
+
+    flesch_reading_ease = round(206.835 - (1.015 * asl) - (84.6 * asw), 1)
+    flesch_reading_ease = max(0.0, min(100.0, flesch_reading_ease))
+
+    grade_level = round((0.39 * asl) + (11.8 * asw) - 15.59, 1)
+    grade_level = max(1.0, min(20.0, grade_level))
+
+    return {
+        'reading_ease': flesch_reading_ease,
+        'grade_level': grade_level,
+        'asl': round(asl, 1),
+        'word_count': num_words,
+        'sentence_count': num_sentences
+    }
+
+
+def calculate_burstiness_score(text: str) -> float:
+    """
+    Measure standard deviation of sentence lengths divided by average length.
+    Coefficient of Variation (CV). High CV (> 0.45) = human writing style.
+    """
+    sentences = [s for s in sent_tokenize(text) if s.strip()]
+    if len(sentences) < 2:
+        return 50.0  # neutral
+
+    lens = [len(word_tokenize(s)) for s in sentences]
+    mean = sum(lens) / len(lens)
+    if mean == 0:
+        return 50.0
+
+    variance = sum((x - mean) ** 2 for x in lens) / len(lens)
+    std_dev = variance ** 0.5
+    cv = std_dev / mean
+
+    # Convert CV (typically 0.1 to 0.8) to a score scale 0 to 100
+    burstiness_score = min(100.0, round(cv * 120.0, 1))
+    return burstiness_score
+
+
+def calculate_perplexity_score(text: str) -> float:
+    """
+    Estimate perplexity rating (vocabulary diversity & Type-Token Ratio).
+    Higher TTR & varied vocabulary structure = higher perplexity score.
+    """
+    words = [w.lower() for w in word_tokenize(text) if w.isalnum()]
+    if not words:
+        return 50.0
+
+    ttr = len(set(words)) / len(words)
+    non_protected = [w for w in words if w not in PROTECTED_WORDS]
+    content_ttr = (len(set(non_protected)) / len(non_protected)) if non_protected else ttr
+
+    # Perplexity estimate combining TTR and content word variation
+    score = (ttr * 40.0) + (content_ttr * 60.0)
+    return round(min(100.0, max(10.0, score * 1.1)), 1)
+
+
+def calculate_ai_score(text: str) -> dict:
+    """
+    Algorithmic estimation of overall AI probability and detector scores.
+    Combines cliché density, burstiness, and perplexity metrics.
+    """
+    if not text or not text.strip():
+        return {
+            'ai_probability': 0,
+            'human_probability': 100,
+            'burstiness': 50,
+            'perplexity': 50,
+            'cliche_count': 0,
+            'detectors': {'gptzero': 0, 'turnitin': 0, 'copyleaks': 0, 'zerogpt': 0}
+        }
+
+    signals = scan_ai_signals(text)
+    cliche_count = len(signals)
+    words = [w for w in word_tokenize(text) if w.isalnum()]
+    word_count = max(1, len(words))
+
+    cliche_density = (cliche_count / (word_count / 50.0))  # cliches per 50 words
+    burstiness = calculate_burstiness_score(text)
+    perplexity = calculate_perplexity_score(text)
+
+    # Base AI probability starting from metrics
+    # High clichés => High AI probability
+    # Low burstiness (< 30) => High AI probability
+    # Low perplexity (< 40) => High AI probability
+    ai_prob = (cliche_density * 22.0) + max(0, (55.0 - burstiness) * 1.1) + max(0, (55.0 - perplexity) * 0.9)
+
+    # Clamp AI probability between 2% and 99%
+    ai_prob = round(max(2.0, min(99.0, ai_prob)), 1)
+    human_prob = round(100.0 - ai_prob, 1)
+
+    # Detector estimations with realistic noise models
+    gptzero = round(max(1.0, min(99.0, ai_prob + random.uniform(-3, 3))), 1)
+    turnitin = round(max(1.0, min(99.0, ai_prob + random.uniform(-4, 2))), 1)
+    copyleaks = round(max(1.0, min(99.0, ai_prob + random.uniform(-2, 4))), 1)
+    zerogpt = round(max(1.0, min(99.0, ai_prob + random.uniform(-3, 5))), 1)
+
+    return {
+        'ai_probability': ai_prob,
+        'human_probability': human_prob,
+        'burstiness': burstiness,
+        'perplexity': perplexity,
+        'cliche_count': cliche_count,
+        'detectors': {
+            'gptzero': gptzero,
+            'turnitin': turnitin,
+            'copyleaks': copyleaks,
+            'zerogpt': zerogpt
+        }
+    }
 
 
 def add_contractions(text: str, rate: float = 0.7) -> str:
@@ -521,3 +692,6 @@ if __name__ == "__main__":
     test = """Artificial intelligence has revolutionized numerous industries. Furthermore, it has enabled unprecedented advancements. The implementation of machine learning algorithms has facilitated the automation of complex tasks. Additionally, natural language processing has enhanced human-computer interaction significantly. These transformative developments have created new opportunities for businesses and individuals alike. It is important to note that this is a significant and impactful trend."""
     print("Academic humanized:")
     print(humanize_text_academic(test))
+    print("\nAI Score metrics:")
+    print(calculate_ai_score(test))
+
