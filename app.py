@@ -334,7 +334,11 @@ def humanize_stream():
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
 
-    return Response(stream_with_context(generate_events()), mimetype='text/event-stream')
+    res = Response(stream_with_context(generate_events()), mimetype='text/event-stream')
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    res.headers['Cache-Control'] = 'no-cache'
+    res.headers['X-Accel-Buffering'] = 'no'
+    return res
 
 
 @app.route('/api/health', methods=['GET'])
@@ -355,6 +359,7 @@ def auth_check():
 
 
 if __name__ == '__main__':
-    print("Starting Text Humanizer Modern Server...")
+    print("Starting Text Humanizer Modern Server (Multi-threaded)...")
     print("Open http://localhost:5000 in your browser")
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, threaded=True)
+

@@ -315,12 +315,48 @@ async function humanizeTextStream() {
             }
         }
     } catch (err) {
-        console.error('Streaming error:', err);
-        showToast('Humanization failed or network error', 'error');
+        console.warn('Streaming error, falling back to REST endpoint:', err);
+        await humanizeTextREST();
     } finally {
         resetLoadingState();
     }
 }
+
+async function humanizeTextREST() {
+    try {
+        const response = await fetch(`${API_BASE}/api/humanize`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': sessionToken ? `Bearer ${sessionToken}` : ''
+            },
+            body: JSON.stringify({
+                text: originalText,
+                style: activeStyle,
+                passes: activePasses
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            humanizedText = data.humanized;
+            outputText.textContent = humanizedText;
+            updateOutputStats(humanizedText);
+            renderAIScorecard(data.post_scores);
+            renderReadability(outputReadability, data.post_readability);
+            buildDiffView(originalText, humanizedText);
+            if (data.steps) {
+                data.steps.forEach(s => addStepLog(s, 'complete'));
+            }
+            showToast('Text Humanized Successfully!', 'success');
+        } else {
+            showToast(data.error || 'Humanization failed', 'error');
+        }
+    } catch (e) {
+        console.error('REST fallback error:', e);
+        showToast('Failed to connect to humanizer API server', 'error');
+    }
+}
+
 
 function handleSSEEvent(ev) {
     if (ev.type === 'init') {
